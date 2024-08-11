@@ -5,6 +5,7 @@ fn main() {
     let source = "
     if + {comment} if /* comment */
     a + b
+    1+1
     ";
     let mut lexer = Lexer::new(source);
 
@@ -16,37 +17,6 @@ fn main() {
         }
     }
 }
-
-const KEYWORD: [&str; 28] = [
-    "program",
-    "var",
-    "array",
-    "of",
-    "begin",
-    "end",
-    "if",
-    "then",
-    "else",
-    "procedure",
-    "return",
-    "call",
-    "while",
-    "do",
-    "not",
-    "or",
-    "div",
-    "and",
-    "char",
-    "integer",
-    "boolean",
-    "read",
-    "write",
-    "readln",
-    "writeln",
-    "true",
-    "false",
-    "break",
-];
 
 
 #[derive(Debug, Clone, PartialEq)]
@@ -68,9 +38,11 @@ enum TokenValue {
 enum Kind {
     Eof,
     Plus,
+    // わかりやすいようにSeparatorも含めてる なくてもいいのか？
     Separator,
     Comment,
     Name,
+    UnsignedInteger,
     If,
 }
 
@@ -84,6 +56,7 @@ impl<'a> Lexer<'a> {
     fn new(source: &'a str) -> Self {
         Self {
             source,
+            // chars: source.chars(),
             chars: source.chars().peekable(),
         }
     }
@@ -94,7 +67,20 @@ impl<'a> Lexer<'a> {
                 // 分離子
                 // 1文字で判定可能
                 '\t' | '\n' | '\r' | ' ' => {
-                    continue;
+                    while let Some(cc) = self.chars.peek() {
+                        match cc {
+                            '\t' | '\n' | '\r' | ' ' => {
+                                let _cc = self.chars.next().unwrap();
+                            }
+                            _ => {
+                                return (Kind::Separator, TokenValue::None);
+                            }
+                        }
+                    }
+
+                    // 最後のEOFの前に，Separatorを検出するか否かが以下のreturn文で決まる
+                    // あれば検出 なければ検出しない
+                    // continue;
                     // return (Kind::Separator, TokenValue::None);
                 }
                 '+' => return (Kind::Plus, TokenValue::None),
@@ -133,10 +119,11 @@ impl<'a> Lexer<'a> {
                 // キーワードまたは名前 この2つは英字から始まる
                 'a'..='z' | 'A'..='Z' => {
                     let mut buf = String::from(c);
-                    while let Some(c) = self.chars.next() {
+                    while let Some(c) = self.chars.peek() {
                         match c {
                             'a'..='z' | 'A'..='Z' | '0'..='9' => {
-                                buf.push(c);
+                                let cc = self.chars.next().unwrap();
+                                buf.push(cc);
                             }
                             _ => {
                                 break;
@@ -150,6 +137,23 @@ impl<'a> Lexer<'a> {
                         Kind::Name => return (kind, TokenValue::String(buf)),
                         _ => return (kind, TokenValue::None),
                     }
+                }
+                // 符号なし整数
+                '0'..='9' => {
+                    let mut buf = String::from(c);
+                    while let Some(c) = self.chars.peek() {
+                        match c {
+                            '0'..='9' => {
+                                let cc = self.chars.next().unwrap();
+                                buf.push(cc);
+                            }
+                            _ => {
+                                break;
+                            }
+                        }
+                    }
+                    let unsigned_int = buf.parse().unwrap();
+                    return (Kind::UnsignedInteger, TokenValue::UInteger(unsigned_int))
                 }
                 _ => {}
             }
@@ -170,11 +174,9 @@ impl<'a> Lexer<'a> {
     }
 
     fn offset(&self) -> usize {
-        // let len = self.source.len();
-        // let pos = self.chars.;
-        // self.source.len() - self.chars.count()
-        // unimplemented!("offset");
-        999
+        // self.chars.clone().count()の計算量を調べた方がいいかもしれない
+        // self.source.len()は fat pointerによりO(1)だが，後者はO(n)の可能性あり
+        self.source.len() - self.chars.clone().count()
     }
 
     fn match_keyword(&self, ident: &str) -> Kind {
