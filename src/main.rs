@@ -48,6 +48,7 @@ const KEYWORD: [&str; 28] = [
     "break",
 ];
 
+
 #[derive(Debug, Clone, PartialEq)]
 struct Token {
     kind: Kind,
