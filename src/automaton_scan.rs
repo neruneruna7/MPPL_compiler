@@ -18,9 +18,6 @@ pub(crate) enum TokenValue {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum Kind {
     Eof,
-    // わかりやすいようにSeparatorも含めてる なくてもいいのか？
-    Separator,
-    Comment,
     Name,
     UnsignedInteger,
     // 以下キーワード
@@ -104,12 +101,16 @@ impl<'a> Lexer<'a> {
 
     pub(crate) fn read_next_kind(&mut self) -> (Kind, TokenValue) {
         while let Some(c) = self.chars.peek() {
-            match *c {
+            // EBNFのprogramに該当
+            match c {
                 // 分離子
                 ' ' | '\t' | '\n' | '{' | '/' => {
                     self.comment();
                 }
-                _ => {}
+                // 字句
+                _ => {
+                    return self.token();
+                }
             }
         }
         (Kind::Eof, TokenValue::None)
@@ -134,6 +135,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn comment(&mut self) {
+        // EBNFのcomment，注釈に該当
         if let Some(c) = self.chars.next() {
             match c {
                 '{' => {
@@ -183,6 +185,75 @@ impl<'a> Lexer<'a> {
                 }
             }
         }
+    }
+
+    fn token(&mut self) -> (Kind, TokenValue) {
+        // EBNFのtoken，字句に該当
+        let c = self.chars.peek().unwrap();
+        match c {
+            'a'..='z' | 'A'..='Z' => {
+                return self.name_keyword();
+            }
+            '0'..='9' => {
+                return self.unsigned_integer();
+            }
+            _ => {
+                return self.symbol();
+            }
+        }
+    }
+
+    fn name_keyword(&mut self) -> (Kind, TokenValue) {
+        let mut name = String::new();
+        name.push(self.chars.next().unwrap());
+
+        while let Some(c) = self.chars.peek() {
+            match c {
+                'a'..='z' | 'A'..='Z' | '0'..='9' => {
+                    name.push(self.chars.next().unwrap());
+                }
+                _ => {
+                    break;
+                }
+            }
+        }
+        let kind = self.match_keyword(&name);
+        (kind, TokenValue::String(name))
+    }
+
+    fn unsigned_integer(&mut self) -> (Kind, TokenValue) {
+        let mut integer = String::new();
+        integer.push(self.chars.next().unwrap());
+
+        while let Some(c) = self.chars.peek() {
+            match c {
+                '0'..='9' => {
+                    integer.push(self.chars.next().unwrap());
+                }
+                _ => {
+                    break;
+                }
+            }
+        }
+        return (
+            Kind::UnsignedInteger,
+            TokenValue::Integer(integer.parse().unwrap()),
+        );
+    }
+
+    fn symbol(&mut self) -> (Kind, TokenValue) {
+        let c = self.chars.next().unwrap();
+        let mut buf = String::from(c);
+        while let Some(c) = self.chars.peek() {
+            let cc = String::from(*c);
+            if self.match_symbol(&cc) == Kind::Name {
+                break;
+            }
+            buf.push(self.chars.next().unwrap());
+        }
+
+        let kind = self.match_symbol(&buf);
+        (kind, TokenValue::None)
     }
 
     pub(crate) fn match_keyword(&self, ident: &str) -> Kind {

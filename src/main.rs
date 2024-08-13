@@ -15,8 +15,9 @@ fn main() {
 
     let source = "
     {comment} /* comment */
+    if true then any my
+    11 + 22 + 12345
     ";
-
 
     let mut lexer = automaton_scan::Lexer::new(source);
     let tokens = lexer.analyze();
