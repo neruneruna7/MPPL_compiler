@@ -1,3 +1,4 @@
+mod automaton_scan;
 mod simple_scan;
 
 fn main() {
@@ -12,12 +13,15 @@ fn main() {
         4 - 3
     ";
 
-    let mut lexer = simple_scan::Lexer::new(source);
+    let source = "
+    {comment} /* comment */
+    ";
+
+
+    let mut lexer = automaton_scan::Lexer::new(source);
     let tokens = lexer.analyze();
 
     for i in tokens.iter() {
         println!("{:?}", i);
     }
 }
-
-
