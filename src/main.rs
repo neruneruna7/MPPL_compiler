@@ -1,6 +1,22 @@
 mod scan1;
 mod scan2;
 mod scan3;
+mod parser1 {
+    use crate::scan3::{Lexer, Token};
+
+    pub struct Parser<'a> {
+        source: &'a str,
+        lexer: Lexer<'a>,
+        cur_token: Token,
+        prev_token_end: usize,
+    }
+
+    // impl<'a> Parser<'a> {
+    // pub fn new(source: &'a str) -> Self {
+    //     Self { source, lexer, cur_token, prev_token_end }
+    // }
+    // }
+}
 
 fn main() {
     println!("Hello, world!");

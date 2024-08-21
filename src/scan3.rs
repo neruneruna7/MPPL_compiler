@@ -105,13 +105,17 @@ impl<'a> Lexer<'a> {
             match c {
                 // 分離子
                 ' ' | '\t' | '\n' | '{' | '/' => {
-                    self.comment();
+                    let c = self.chars.next().unwrap();
+                    self.comment(c);
                 }
                 // 字句
                 _ => {
                     let start = self.offset();
-                    // let (kind, value) = self.read_next_kind();
-                    let (kind, value) =  self.token();
+                    // peekで存在を確認しているのでunwrapでpanicは起きない
+                    // token()関数の呼び出し元（つまりこの関数）でchars.next()を呼び出すことで，
+                    // unwrap()でpanicが起きる可能性を排除するコードの距離を短くしている
+                    let c = self.chars.next().unwrap();
+                    let (kind, value) = self.token(c);
                     let end = self.offset();
 
                     return Token {
@@ -144,18 +148,16 @@ impl<'a> Lexer<'a> {
         self.source.len() - self.chars.clone().count()
     }
 
-    fn comment(&mut self) {
+    fn comment(&mut self, c: char) {
         // EBNFのcomment，注釈に該当
-        if let Some(c) = self.chars.next() {
-            match c {
-                '{' => {
-                    self.comment_brace();
-                }
-                '/' => {
-                    self.comment_slashstar();
-                }
-                _ => {}
+        match c {
+            '{' => {
+                self.comment_brace();
             }
+            '/' => {
+                self.comment_slashstar();
+            }
+            _ => {}
         }
     }
     fn comment_brace(&mut self) {
@@ -196,59 +198,48 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn token(&mut self) -> (Kind, TokenValue) {
+    fn token(&mut self, c: char) -> (Kind, TokenValue) {
         // EBNFのtoken，字句に該当
-        
-        // panicしないことを保証したうえでunwrapしている
-        // 呼び出しのpeekで存在を確認しているのでunwrapでpanicは起きない 
-        let c = self.chars.peek().unwrap(); 
         match c {
             'a'..='z' | 'A'..='Z' => {
-                return self.name_keyword();
+                return self.name_keyword(c);
             }
             '0'..='9' => {
-                return self.unsigned_integer();
+                return self.unsigned_integer(c);
             }
             _ => {
-                return self.symbol();
+                return self.symbol(c);
             }
         }
     }
 
-    fn name_keyword(&mut self) -> (Kind, TokenValue) {
-        let mut name = String::new();
-        // 呼び出しのpeekで存在を確認しているのでunwrapでpanicは起きない
-        name.push(self.chars.next().unwrap());
+    fn name_keyword(&mut self, c: char) -> (Kind, TokenValue) {
+        let mut buf = String::from(c);
 
         while let Some(c) = self.chars.peek() {
             match c {
                 'a'..='z' | 'A'..='Z' | '0'..='9' => {
-                    name.push(self.chars.next().unwrap());
+                    buf.push(self.chars.next().unwrap());
                 }
                 _ => {
                     break;
                 }
             }
         }
-        let kind = self.match_keyword(&name);
+        let kind = self.match_keyword(&buf);
         match kind {
-            Kind::Name => {
-                (kind, TokenValue::String(name))
-            }
-            _ => {
-                (kind, TokenValue::None)
-            }
+            Kind::Name => (kind, TokenValue::String(buf)),
+            _ => (kind, TokenValue::None),
         }
     }
 
-    fn unsigned_integer(&mut self) -> (Kind, TokenValue) {
-        let mut integer = String::new();
-        integer.push(self.chars.next().unwrap());
+    fn unsigned_integer(&mut self, c: char) -> (Kind, TokenValue) {
+        let mut buf = String::from(c);
 
         while let Some(c) = self.chars.peek() {
             match c {
                 '0'..='9' => {
-                    integer.push(self.chars.next().unwrap());
+                    buf.push(self.chars.next().unwrap());
                 }
                 _ => {
                     break;
@@ -257,13 +248,13 @@ impl<'a> Lexer<'a> {
         }
         return (
             Kind::UnsignedInteger,
-            TokenValue::Integer(integer.parse().unwrap()),
+            TokenValue::Integer(buf.parse().unwrap()),
         );
     }
 
-    fn symbol(&mut self) -> (Kind, TokenValue) {
-        let c = self.chars.next().unwrap();
+    fn symbol(&mut self, c: char) -> (Kind, TokenValue) {
         let mut buf = String::from(c);
+
         while let Some(c) = self.chars.peek() {
             let cc = String::from(*c);
             if self.match_symbol(&cc) == Kind::Name {
