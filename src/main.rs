@@ -1,8 +1,8 @@
-mod scan1;
-mod scan2;
-mod scan3;
+use scan::scan3;
+
+mod scan;
 mod parser1 {
-    use crate::scan3::{Lexer, Token};
+    use crate::scan::scan3::{Lexer, Token};
 
     pub struct Parser<'a> {
         source: &'a str,
