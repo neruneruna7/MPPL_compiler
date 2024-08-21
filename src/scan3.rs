@@ -1,6 +1,6 @@
 use std::{iter::Peekable, str::Chars};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct Token {
     pub(crate) kind: Kind,
     pub(crate) start: usize,
@@ -8,14 +8,14 @@ pub(crate) struct Token {
     pub(crate) value: TokenValue,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) enum TokenValue {
     None,
     Integer(u32),
     String(String),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum Kind {
     Eof,
     Name,
