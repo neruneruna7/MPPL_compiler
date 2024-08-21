@@ -231,7 +231,14 @@ impl<'a> Lexer<'a> {
             }
         }
         let kind = self.match_keyword(&name);
-        (kind, TokenValue::String(name))
+        match kind {
+            Kind::Name => {
+                (kind, TokenValue::String(name))
+            }
+            _ => {
+                (kind, TokenValue::None)
+            }
+        }
     }
 
     fn unsigned_integer(&mut self) -> (Kind, TokenValue) {
