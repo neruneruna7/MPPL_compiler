@@ -70,6 +70,67 @@ pub(crate) enum Kind {
     Semicolon,
 }
 
+pub(crate) fn match_keyword(ident: &str) -> Kind {
+    if ident.len() == 1 || ident.len() > 10 {
+        return Kind::Name;
+    }
+    match ident {
+        "program" => Kind::Program,
+        "var" => Kind::Var,
+        "array" => Kind::Array,
+        "of" => Kind::Of,
+        "begin" => Kind::Begin,
+        "end" => Kind::End,
+        "if" => Kind::If,
+        "then" => Kind::Then,
+        "else" => Kind::Else,
+        "procedure" => Kind::Procedure,
+        "return" => Kind::Return,
+        "call" => Kind::Call,
+        "while" => Kind::While,
+        "do" => Kind::DO,
+        "not" => Kind::Not,
+        "or" => Kind::Or,
+        "div" => Kind::Div,
+        "and" => Kind::And,
+        "char" => Kind::Char,
+        "integer" => Kind::Integer,
+        "boolean" => Kind::Boolean,
+        "read" => Kind::Read,
+        "write" => Kind::Write,
+        "readln" => Kind::Readln,
+        "writeln" => Kind::Writeln,
+        "true" => Kind::True,
+        "false" => Kind::False,
+        "break" => Kind::Break,
+        _ => Kind::Name,
+    }
+}
+
+pub(crate) fn match_symbol(symbol: &str) -> Kind {
+    match symbol {
+        "+" => Kind::Plus,
+        "-" => Kind::Minus,
+        "*" => Kind::Star,
+        "=" => Kind::Equal,
+        "<>" => Kind::NotEq,
+        "<" => Kind::Less,
+        "<=" => Kind::LessEq,
+        ">" => Kind::Great,
+        ">=" => Kind::GreatEq,
+        "(" => Kind::LParen,
+        ")" => Kind::RParen,
+        "[" => Kind::LBracket,
+        "]" => Kind::RBracket,
+        ":=" => Kind::Assign,
+        "." => Kind::Dot,
+        "," => Kind::Comma,
+        ":" => Kind::Colon,
+        ";" => Kind::Semicolon,
+        _ => Kind::Name,
+    }
+}
+
 pub(crate) struct Lexer<'a> {
     pub(crate) source: &'a str,
     pub(crate) chars: Peekable<Chars<'a>>,
@@ -226,7 +287,7 @@ impl<'a> Lexer<'a> {
                 }
             }
         }
-        let kind = self.match_keyword(&buf);
+        let kind = match_keyword(&buf);
         match kind {
             Kind::Name => (kind, TokenValue::String(buf)),
             _ => (kind, TokenValue::None),
@@ -257,74 +318,13 @@ impl<'a> Lexer<'a> {
 
         while let Some(c) = self.chars.peek() {
             let cc = String::from(*c);
-            if self.match_symbol(&cc) == Kind::Name {
+            if match_symbol(&cc) == Kind::Name {
                 break;
             }
             buf.push(self.chars.next().unwrap());
         }
 
-        let kind = self.match_symbol(&buf);
+        let kind = match_symbol(&buf);
         (kind, TokenValue::None)
-    }
-
-    pub(crate) fn match_keyword(&self, ident: &str) -> Kind {
-        if ident.len() == 1 || ident.len() > 10 {
-            return Kind::Name;
-        }
-        match ident {
-            "program" => Kind::Program,
-            "var" => Kind::Var,
-            "array" => Kind::Array,
-            "of" => Kind::Of,
-            "begin" => Kind::Begin,
-            "end" => Kind::End,
-            "if" => Kind::If,
-            "then" => Kind::Then,
-            "else" => Kind::Else,
-            "procedure" => Kind::Procedure,
-            "return" => Kind::Return,
-            "call" => Kind::Call,
-            "while" => Kind::While,
-            "do" => Kind::DO,
-            "not" => Kind::Not,
-            "or" => Kind::Or,
-            "div" => Kind::Div,
-            "and" => Kind::And,
-            "char" => Kind::Char,
-            "integer" => Kind::Integer,
-            "boolean" => Kind::Boolean,
-            "read" => Kind::Read,
-            "write" => Kind::Write,
-            "readln" => Kind::Readln,
-            "writeln" => Kind::Writeln,
-            "true" => Kind::True,
-            "false" => Kind::False,
-            "break" => Kind::Break,
-            _ => Kind::Name,
-        }
-    }
-
-    pub(crate) fn match_symbol(&self, symbol: &str) -> Kind {
-        match symbol {
-            "+" => Kind::Plus,
-            "-" => Kind::Minus,
-            "*" => Kind::Star,
-            "=" => Kind::Equal,
-            "<>" => Kind::NotEq,
-            "<" => Kind::Less,
-            "<=" => Kind::LessEq,
-            ">" => Kind::Great,
-            ">=" => Kind::GreatEq,
-            "(" => Kind::LParen,
-            ")" => Kind::RParen,
-            "[" => Kind::LBracket,
-            "]" => Kind::RBracket,
-            ":=" => Kind::Assign,
-            "." => Kind::Dot,
-            "," => Kind::Comma,
-            ":" => Kind::Colon,
-            ";" => Kind::Semicolon,
-            _ => Kind::Name,
-        }
     }
 }
