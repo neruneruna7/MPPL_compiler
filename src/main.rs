@@ -1,5 +1,5 @@
-mod automaton_scan;
-mod simple_scan;
+mod scan2;
+mod scan1;
 mod scan3;
 
 fn main() {
