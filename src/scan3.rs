@@ -99,7 +99,7 @@ impl<'a> Lexer<'a> {
         token_vec
     }
 
-    pub(crate) fn read_next_kind(&mut self) -> (Kind, TokenValue) {
+    pub(crate) fn read_next_token(&mut self) -> Token {
         while let Some(c) = self.chars.peek() {
             // EBNFのprogramに該当
             match c {
@@ -109,22 +109,28 @@ impl<'a> Lexer<'a> {
                 }
                 // 字句
                 _ => {
-                    return self.token();
+                    let start = self.offset();
+                    // let (kind, value) = self.read_next_kind();
+                    let (kind, value) =  self.token();
+                    let end = self.offset();
+
+                    return Token {
+                        kind,
+                        start,
+                        end,
+                        value,
+                    };
                 }
             }
         }
-        (Kind::Eof, TokenValue::None)
-    }
-
-    pub(crate) fn read_next_token(&mut self) -> Token {
         let start = self.offset();
-        let (kind, value) = self.read_next_kind();
         let end = self.offset();
+
         Token {
-            kind,
+            kind: Kind::Eof,
             start,
             end,
-            value,
+            value: TokenValue::None,
         }
     }
 

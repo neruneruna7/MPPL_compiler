@@ -22,7 +22,7 @@ fn main() {
         i := 5
     ";
 
-    let mut lexer = automaton_scan::Lexer::new(source);
+    let mut lexer = scan3::Lexer::new(source);
     let tokens = lexer.analyze();
 
     for i in tokens.iter() {
