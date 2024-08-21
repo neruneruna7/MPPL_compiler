@@ -1,5 +1,5 @@
-mod scan2;
 mod scan1;
+mod scan2;
 mod scan3;
 
 fn main() {
