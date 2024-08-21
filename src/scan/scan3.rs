@@ -68,6 +68,8 @@ pub(crate) enum Kind {
     Comma,
     Colon,
     Semicolon,
+    // どれでもない
+    Unknown,
 }
 
 fn match_keyword(ident: &str) -> Kind {
@@ -127,7 +129,7 @@ fn match_symbol(symbol: &str) -> Kind {
         "," => Kind::Comma,
         ":" => Kind::Colon,
         ";" => Kind::Semicolon,
-        _ => Kind::Name,
+        _ => Kind::Unknown,
     }
 }
 
@@ -312,7 +314,7 @@ impl<'a> Lexer<'a> {
 
         while let Some(c) = self.chars.peek() {
             let cc = String::from(*c);
-            if match_symbol(&cc) == Kind::Name {
+            if match_symbol(&cc) == Kind::Unknown {
                 break;
             }
             buf.push(self.chars.next().unwrap());
