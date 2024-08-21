@@ -70,7 +70,7 @@ pub(crate) enum Kind {
     Semicolon,
 }
 
-pub(crate) fn match_keyword(ident: &str) -> Kind {
+fn match_keyword(ident: &str) -> Kind {
     if ident.len() == 1 || ident.len() > 10 {
         return Kind::Name;
     }
@@ -107,7 +107,7 @@ pub(crate) fn match_keyword(ident: &str) -> Kind {
     }
 }
 
-pub(crate) fn match_symbol(symbol: &str) -> Kind {
+fn match_symbol(symbol: &str) -> Kind {
     match symbol {
         "+" => Kind::Plus,
         "-" => Kind::Minus,
@@ -199,7 +199,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub(crate) fn offset(&self) -> usize {
+    fn offset(&self) -> usize {
         // self.chars.clone().count()の計算量を調べた方がいいかもしれない
         // self.source.len()は fat pointerによりO(1)だが，後者はO(n)の可能性あり
 
