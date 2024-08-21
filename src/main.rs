@@ -1,5 +1,6 @@
 mod automaton_scan;
 mod simple_scan;
+mod scan3;
 
 fn main() {
     println!("Hello, world!");
@@ -14,9 +15,11 @@ fn main() {
     ";
 
     let source = "
-    {comment} /* comment */
-    if true then any my
-    11 + 22 + 12345
+    if true then
+    { this is a comment }
+        1 + 1
+    else
+        i := 5
     ";
 
     let mut lexer = automaton_scan::Lexer::new(source);
