@@ -137,6 +137,10 @@ impl<'a> Lexer<'a> {
     pub(crate) fn offset(&self) -> usize {
         // self.chars.clone().count()の計算量を調べた方がいいかもしれない
         // self.source.len()は fat pointerによりO(1)だが，後者はO(n)の可能性あり
+
+        // イテレータを消費し，Noneを返すまでの要素数を返す
+        // ので，count()の計算量はO(n)になると思う
+        // ややコストが高めかもしれない
         self.source.len() - self.chars.clone().count()
     }
 
@@ -155,7 +159,6 @@ impl<'a> Lexer<'a> {
         }
     }
     fn comment_brace(&mut self) {
-        let c = self.chars.next().unwrap();
         while let Some(c) = self.chars.next() {
             if c == '}' {
                 break;
@@ -195,7 +198,10 @@ impl<'a> Lexer<'a> {
 
     fn token(&mut self) -> (Kind, TokenValue) {
         // EBNFのtoken，字句に該当
-        let c = self.chars.peek().unwrap();
+        
+        // panicしないことを保証したうえでunwrapしている
+        // 呼び出しのpeekで存在を確認しているのでunwrapでpanicは起きない 
+        let c = self.chars.peek().unwrap(); 
         match c {
             'a'..='z' | 'A'..='Z' => {
                 return self.name_keyword();
@@ -211,6 +217,7 @@ impl<'a> Lexer<'a> {
 
     fn name_keyword(&mut self) -> (Kind, TokenValue) {
         let mut name = String::new();
+        // 呼び出しのpeekで存在を確認しているのでunwrapでpanicは起きない
         name.push(self.chars.next().unwrap());
 
         while let Some(c) = self.chars.peek() {
