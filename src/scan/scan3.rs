@@ -222,7 +222,7 @@ impl<'a> Lexer<'a> {
         }
     }
     fn comment_brace(&mut self) {
-        while let Some(c) = self.chars.next() {
+        for c in self.chars.by_ref() {
             if c == '}' {
                 break;
             }
@@ -236,7 +236,7 @@ impl<'a> Lexer<'a> {
             Other,
         }
         let mut state = State::Slash;
-        while let Some(c) = self.chars.next() {
+        for c in self.chars.by_ref() {
             match state {
                 State::Slash => {
                     if c == '*' {
@@ -263,13 +263,13 @@ impl<'a> Lexer<'a> {
         // EBNFのtoken，字句に該当
         match c {
             'a'..='z' | 'A'..='Z' => {
-                return self.name_keyword(c);
+                self.name_keyword(c)
             }
             '0'..='9' => {
-                return self.unsigned_integer(c);
+                self.unsigned_integer(c)
             }
             _ => {
-                return self.symbol(c);
+                self.symbol(c)
             }
         }
     }
@@ -307,10 +307,10 @@ impl<'a> Lexer<'a> {
                 }
             }
         }
-        return (
+        (
             Kind::UnsignedInteger,
             TokenValue::Integer(buf.parse().unwrap()),
-        );
+        )
     }
 
     fn symbol(&mut self, c: char) -> (Kind, TokenValue) {
