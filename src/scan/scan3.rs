@@ -262,15 +262,9 @@ impl<'a> Lexer<'a> {
     fn token(&mut self, c: char) -> (Kind, TokenValue) {
         // EBNFのtoken，字句に該当
         match c {
-            'a'..='z' | 'A'..='Z' => {
-                self.name_keyword(c)
-            }
-            '0'..='9' => {
-                self.unsigned_integer(c)
-            }
-            _ => {
-                self.symbol(c)
-            }
+            'a'..='z' | 'A'..='Z' => self.name_keyword(c),
+            '0'..='9' => self.unsigned_integer(c),
+            _ => self.symbol(c),
         }
     }
 
