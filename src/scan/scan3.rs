@@ -20,6 +20,7 @@ pub enum Kind {
     Eof,
     Name,
     UnsignedInteger,
+    String,
     // 以下キーワード
     Program,
     Var,
@@ -266,6 +267,7 @@ impl<'a> Lexer<'a> {
         match c {
             'a'..='z' | 'A'..='Z' => self.name_keyword(c),
             '0'..='9' => self.unsigned_integer(c),
+            '"' => self.string(),
             _ => self.symbol(c),
         }
     }
@@ -307,6 +309,35 @@ impl<'a> Lexer<'a> {
             Kind::UnsignedInteger,
             TokenValue::Integer(buf.parse().unwrap()),
         )
+    }
+
+    fn string(&mut self) -> (Kind, TokenValue) {
+        enum State {
+            SingleQuote,
+            Other,
+        }
+        let mut state = State::Other;
+        let mut buf = String::new();
+        for c in self.chars.by_ref() {
+            match state {
+                State::Other => {
+                    if c == '\'' {
+                        state = State::SingleQuote;
+                    } else if c == '"' {
+                        break;
+                    }
+                }
+                State::SingleQuote => {
+                    if c == '"' {
+                        return (Kind::Unknown, TokenValue::String(buf));
+                    } else if c != '\'' {
+                        state = State::Other;
+                    }
+                }
+            }
+            buf.push(c);
+        }
+        (Kind::String, TokenValue::String(buf))
     }
 
     fn symbol(&mut self, c: char) -> (Kind, TokenValue) {

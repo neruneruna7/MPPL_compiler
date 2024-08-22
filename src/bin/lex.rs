@@ -12,15 +12,19 @@ fn main() {
         4 - 3
     ";
 
-    let source = "
-    if true then
-    if if if if if if
-    c c c c c c c c 
-    { this is a comment }
-        1 + 1
-    else
-        i := 5
-    ";
+    // let source = "
+    // if true then
+    // if if if if if if
+    // c c c c c c c c 
+    // { this is a comment }
+    //     1 + 1
+    // else
+    //     i := 5
+    // ";
+
+    let source = r#"
+    "string''sring"
+    "#;
 
     let mut lexer = scan3::Lexer::new(source);
     let tokens = lexer.analyze();
