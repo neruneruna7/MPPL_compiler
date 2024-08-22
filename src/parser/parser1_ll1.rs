@@ -27,10 +27,10 @@ impl<'a> Parser<'a> {
             None => {}
         }
 
-        self.syntax_error();
+        self.syntax_error([kind].as_ref());
     }
 
-    fn syntax_error(&self) {
+    fn syntax_error(&self, expected: &[scan3::Kind]) {
         let sliced_source = if let Some(ref l) = self.lookahead {
             &self.lexer.source[..l.start]
         } else {
@@ -40,7 +40,7 @@ impl<'a> Parser<'a> {
         panic!(
             "syntax error source code:\n\n {} \n\n expect {:?} but found {:?}",
             sliced_source,
-            Kind::Eof,
+            expected,
             &self.lookahead
         );
     }
@@ -81,9 +81,9 @@ impl<'a> Parser<'a> {
                 Kind::Integer => self.match_token(Kind::Integer),
                 Kind::Boolean => self.match_token(Kind::Boolean),
                 Kind::Char => self.match_token(Kind::Char),
-                _ => todo!(),
+                _ => self.syntax_error([Kind::Integer, Kind::Boolean, Kind::Char].as_ref()),
             },
-            _ => todo!(),
+            _ => self.syntax_error([Kind::Integer, Kind::Boolean, Kind::Char].as_ref()),
         }
     }
 }
