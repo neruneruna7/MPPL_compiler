@@ -28,11 +28,19 @@ pub mod parser {
                             return;
                         }
                     }
-                    None => {}
+                    None => {
+                    }
                 }
+
+                let sliced_source = if let Some(ref l) = self.lookahead {
+                    &self.lexer.source[..l.start]
+                } else {
+                    &self.lexer.source
+                };
+
                 panic!(
-                    "syntax error, expect {:?}; found {:?}",
-                    kind, &self.lookahead
+                    "syntax error source code:\n\n {} \n\n expect {:?} but found {:?}",
+                    sliced_source, kind, &self.lookahead
                 );
             }
 
@@ -54,7 +62,7 @@ pub mod parser {
 
 fn main() {
     let source = "
-    program sample; .";
+    program sample; if .";
 
     let mut lexer = scan3::Lexer::new(source);
     let mut parser = parser::parser1::Parser::new(lexer);
