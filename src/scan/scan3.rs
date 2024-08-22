@@ -1,22 +1,22 @@
 use std::{iter::Peekable, str::Chars};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct Token {
-    pub(crate) kind: Kind,
-    pub(crate) start: usize,
-    pub(crate) end: usize,
-    pub(crate) value: TokenValue,
+pub struct Token {
+    pub kind: Kind,
+    pub start: usize,
+    pub end: usize,
+    pub value: TokenValue,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) enum TokenValue {
+pub enum TokenValue {
     None,
     Integer(u32),
     String(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) enum Kind {
+pub enum Kind {
     Eof,
     Name,
     UnsignedInteger,
@@ -133,14 +133,14 @@ fn match_symbol(symbol: &str) -> Kind {
     }
 }
 
-pub(crate) struct Lexer<'a> {
-    pub(crate) source: &'a str,
-    pub(crate) chars: Peekable<Chars<'a>>,
+pub struct Lexer<'a> {
+    pub source: &'a str,
+    pub chars: Peekable<Chars<'a>>,
     // chars: Chars<'a>,
 }
 
 impl<'a> Lexer<'a> {
-    pub(crate) fn new(source: &'a str) -> Self {
+    pub fn new(source: &'a str) -> Self {
         Self {
             source,
             // chars: source.chars(),
@@ -148,7 +148,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub(crate) fn analyze(&mut self) -> Vec<Token> {
+    pub fn analyze(&mut self) -> Vec<Token> {
         let mut token_vec = Vec::new();
         loop {
             let token = self.read_next_token();
@@ -162,7 +162,7 @@ impl<'a> Lexer<'a> {
         token_vec
     }
 
-    pub(crate) fn read_next_token(&mut self) -> Token {
+    pub fn read_next_token(&mut self) -> Token {
         while let Some(c) = self.chars.peek() {
             // EBNFのprogramに該当
             match c {
