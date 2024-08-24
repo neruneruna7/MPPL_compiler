@@ -15,7 +15,7 @@ fn main() {
     // let source = "
     // if true then
     // if if if if if if
-    // c c c c c c c c 
+    // c c c c c c c c
     // { this is a comment }
     //     1 + 1
     // else
