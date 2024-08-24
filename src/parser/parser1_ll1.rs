@@ -194,7 +194,7 @@ impl<'a> Parser<'a> {
             match l.kind {
                 _ if self.match_syntax_first_token(SyntaxKind::VariableDeclaration) => {
                     self.variable_declaration_part()
-                },
+                }
                 _ if self.match_syntax_first_token(SyntaxKind::SubprogramDeclaration) => {
                     self.subprogram_declaration()
                 }
@@ -242,16 +242,13 @@ impl<'a> Parser<'a> {
     /// 標準型 | 配列型
     /// 予約語に引っかかるのを防ぐため，アンダーバーをつけている
     fn type_(&mut self) {
-        let err = || {
-            self.syntax_error(
-                &[],
-                &[SyntaxKind::StandardType, SyntaxKind::ArrayType],
-            )
-        };
+        let err = || self.syntax_error(&[], &[SyntaxKind::StandardType, SyntaxKind::ArrayType]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 _ if self.match_syntax_first_token(SyntaxKind::ArrayType) => self.array_type(),
-                _ if self.match_syntax_first_token(SyntaxKind::StandardType) => self.standard_type(),
+                _ if self.match_syntax_first_token(SyntaxKind::StandardType) => {
+                    self.standard_type()
+                }
                 _ => err(),
             },
             None => err(),
@@ -260,12 +257,7 @@ impl<'a> Parser<'a> {
 
     /// "integer" | "boolean" | "char"
     fn standard_type(&mut self) {
-        let err = || {
-            self.syntax_error(
-                [Kind::Integer, Kind::Boolean, Kind::Char].as_ref(),
-                &[]
-            )
-        };
+        let err = || self.syntax_error([Kind::Integer, Kind::Boolean, Kind::Char].as_ref(), &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Integer => self.match_consume_token(Kind::Integer),
@@ -359,8 +351,12 @@ impl<'a> Parser<'a> {
                 _ if self.match_syntax_first_token(SyntaxKind::IterationStatement) => {
                     self.iteration_statement()
                 }
-                _ if self.match_syntax_first_token(SyntaxKind::ExitStatement) => self.exit_statement(),
-                _ if self.match_syntax_first_token(SyntaxKind::CallStatement) => self.call_statement(),
+                _ if self.match_syntax_first_token(SyntaxKind::ExitStatement) => {
+                    self.exit_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::CallStatement) => {
+                    self.call_statement()
+                }
                 _ if self.match_syntax_first_token(SyntaxKind::CompoundStatement) => {
                     self.compound_statement()
                 }
