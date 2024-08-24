@@ -151,14 +151,11 @@ impl<'a> Parser<'a> {
     }
 
     fn match_consume_token(&mut self, kind: scan3::Kind) {
-        match self.lookahead {
-            Some(ref l) => {
-                if l.kind == kind {
-                    self.lookahead = Some(self.lexer.read_next_token());
-                    return;
-                }
+        if let Some(ref l) = self.lookahead {
+            if l.kind == kind {
+                self.lookahead = Some(self.lexer.read_next_token());
+                return;
             }
-            None => {}
         }
 
         self.syntax_error([kind].as_ref(), [].as_ref());
@@ -168,7 +165,7 @@ impl<'a> Parser<'a> {
         let sliced_source = if let Some(ref l) = self.lookahead {
             &self.lexer.source[..l.start]
         } else {
-            &self.lexer.source
+            self.lexer.source
         };
 
         panic!(
@@ -340,39 +337,36 @@ impl<'a> Parser<'a> {
     /// 代入文 | 分岐文 | 繰り返し文 | 脱出文 | 手続き呼び出し文 | 複合文 | 戻り文 | 入力文
     /// | 出力文 | 複合文 | 空文
     fn statement(&mut self) {
-        match self.lookahead {
-            Some(ref l) => match l.kind {
-                _ if self.match_syntax_first_token(SyntaxKind::AssignmentStatement) => {
-                    self.assignment_statement()
-                }
-                _ if self.match_syntax_first_token(SyntaxKind::ConditionStatement) => {
-                    self.condnition_statement()
-                }
-                _ if self.match_syntax_first_token(SyntaxKind::IterationStatement) => {
-                    self.iteration_statement()
-                }
-                _ if self.match_syntax_first_token(SyntaxKind::ExitStatement) => {
-                    self.exit_statement()
-                }
-                _ if self.match_syntax_first_token(SyntaxKind::CallStatement) => {
-                    self.call_statement()
-                }
-                _ if self.match_syntax_first_token(SyntaxKind::CompoundStatement) => {
-                    self.compound_statement()
-                }
-                _ if self.match_syntax_first_token(SyntaxKind::ReturnStatement) => {
-                    self.return_statement()
-                }
-                _ if self.match_syntax_first_token(SyntaxKind::InputStatement) => {
-                    self.input_statement()
-                }
-                _ if self.match_syntax_first_token(SyntaxKind::OutputStatement) => {
-                    self.output_statement()
-                }
-                _ => {}
-            },
-            None => {}
-        }
+        if let Some(ref l) = self.lookahead { match l.kind {
+            _ if self.match_syntax_first_token(SyntaxKind::AssignmentStatement) => {
+                self.assignment_statement()
+            }
+            _ if self.match_syntax_first_token(SyntaxKind::ConditionStatement) => {
+                self.condnition_statement()
+            }
+            _ if self.match_syntax_first_token(SyntaxKind::IterationStatement) => {
+                self.iteration_statement()
+            }
+            _ if self.match_syntax_first_token(SyntaxKind::ExitStatement) => {
+                self.exit_statement()
+            }
+            _ if self.match_syntax_first_token(SyntaxKind::CallStatement) => {
+                self.call_statement()
+            }
+            _ if self.match_syntax_first_token(SyntaxKind::CompoundStatement) => {
+                self.compound_statement()
+            }
+            _ if self.match_syntax_first_token(SyntaxKind::ReturnStatement) => {
+                self.return_statement()
+            }
+            _ if self.match_syntax_first_token(SyntaxKind::InputStatement) => {
+                self.input_statement()
+            }
+            _ if self.match_syntax_first_token(SyntaxKind::OutputStatement) => {
+                self.output_statement()
+            }
+            _ => {}
+        } }
     }
 
     /// "if" 式 "then" 文 [ "else" 文 ]

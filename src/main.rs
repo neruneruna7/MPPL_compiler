@@ -6,7 +6,7 @@ fn main() {
     let source = "
     program sample; if .";
 
-    let mut lexer = scan3::Lexer::new(source);
+    let lexer = scan3::Lexer::new(source);
     let mut parser = parser::parser1_ll1::Parser::new(lexer);
     parser.parse_program();
 
