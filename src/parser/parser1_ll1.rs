@@ -1,5 +1,6 @@
 use crate::scan3::{self, Kind, Lexer, Token};
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 enum SyntaxKind {
     Program,
     Block,
@@ -71,7 +72,7 @@ impl<'a> Parser<'a> {
                 self.match_syntax_first_token(SyntaxKind::VariableDeclaration)
                     || self.match_syntax_first_token(SyntaxKind::SubprogramDeclaration)
                     || self.match_syntax_first_token(SyntaxKind::CompoundStatement)
-            },
+            }
             SyntaxKind::VariableDeclaration => lk == Kind::Var,
             SyntaxKind::VariableNames => self.match_syntax_first_token(SyntaxKind::VariableName),
             SyntaxKind::VariableName => lk == Kind::Name,
@@ -160,10 +161,10 @@ impl<'a> Parser<'a> {
             None => {}
         }
 
-        self.syntax_error([kind].as_ref());
+        self.syntax_error([kind].as_ref(), [].as_ref());
     }
 
-    fn syntax_error(&self, expected: &[scan3::Kind]) {
+    fn syntax_error(&self, expected_token: &[scan3::Kind], expected_syntax: &[SyntaxKind]) {
         let sliced_source = if let Some(ref l) = self.lookahead {
             &self.lexer.source[..l.start]
         } else {
@@ -171,8 +172,8 @@ impl<'a> Parser<'a> {
         };
 
         panic!(
-            "syntax error source code:\n\n {} \n\n expect {:?} but found {:?}",
-            sliced_source, expected, &self.lookahead
+            "syntax error source code:\n\n {} \n\n expect token= {:?}, expect syntax= {:?} but found {:?}",
+            sliced_source, expected_token, expected_syntax, &self.lookahead
         );
     }
 
@@ -232,12 +233,15 @@ impl<'a> Parser<'a> {
             Some(ref l) => match l.kind {
                 Kind::Array => self.array_type(),
                 Kind::Integer | Kind::Boolean | Kind::Char => self.standard_type(),
-                _ => self
-                    .syntax_error([Kind::Array, Kind::Integer, Kind::Boolean, Kind::Char].as_ref()),
+                _ => self.syntax_error(
+                    [Kind::Array, Kind::Integer, Kind::Boolean, Kind::Char].as_ref(),
+                    &[],
+                ),
             },
-            _ => {
-                self.syntax_error([Kind::Array, Kind::Integer, Kind::Boolean, Kind::Char].as_ref())
-            }
+            _ => self.syntax_error(
+                [Kind::Array, Kind::Integer, Kind::Boolean, Kind::Char].as_ref(),
+                &[],
+            ),
         }
     }
 
@@ -248,9 +252,9 @@ impl<'a> Parser<'a> {
                 Kind::Integer => self.match_consume_token(Kind::Integer),
                 Kind::Boolean => self.match_consume_token(Kind::Boolean),
                 Kind::Char => self.match_consume_token(Kind::Char),
-                _ => self.syntax_error([Kind::Integer, Kind::Boolean, Kind::Char].as_ref()),
+                _ => self.syntax_error([Kind::Integer, Kind::Boolean, Kind::Char].as_ref(), &[]),
             },
-            _ => self.syntax_error([Kind::Integer, Kind::Boolean, Kind::Char].as_ref()),
+            _ => self.syntax_error([Kind::Integer, Kind::Boolean, Kind::Char].as_ref(), &[]),
         }
     }
 
@@ -410,6 +414,7 @@ impl<'a> Parser<'a> {
                     Kind::Char,
                 ]
                 .as_ref(),
+                &[],
             )
         };
 
@@ -443,6 +448,7 @@ impl<'a> Parser<'a> {
         let err = || {
             self.syntax_error(
                 [Kind::UnsignedInteger, Kind::True, Kind::False, Kind::String].as_ref(),
+                &[],
             )
         };
         match self.lookahead {
@@ -459,7 +465,7 @@ impl<'a> Parser<'a> {
 
     /// "*" | "div" | "and"
     fn multiplicative_operator(&mut self) {
-        let err = || self.syntax_error([Kind::Star, Kind::Div, Kind::And].as_ref());
+        let err = || self.syntax_error([Kind::Star, Kind::Div, Kind::And].as_ref(), &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Star => self.match_consume_token(Kind::Star),
@@ -473,7 +479,7 @@ impl<'a> Parser<'a> {
 
     /// "+" | "-" | "or"
     fn additive_operator(&mut self) {
-        let err = || self.syntax_error([Kind::Plus, Kind::Minus, Kind::Or].as_ref());
+        let err = || self.syntax_error([Kind::Plus, Kind::Minus, Kind::Or].as_ref(), &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Plus => self.match_consume_token(Kind::Plus),
@@ -498,6 +504,7 @@ impl<'a> Parser<'a> {
                     Kind::GreatEq,
                 ]
                 .as_ref(),
+                &[],
             )
         };
         match self.lookahead {
@@ -516,7 +523,7 @@ impl<'a> Parser<'a> {
 
     /// ( "read" | "readln" ) [ "(" 変数 { "," 変数 } ")" ]
     fn input_statement(&mut self) {
-        let err = || self.syntax_error([Kind::Read, Kind::Readln].as_ref());
+        let err = || self.syntax_error([Kind::Read, Kind::Readln].as_ref(), &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Read => self.match_consume_token(Kind::Read),
@@ -545,7 +552,7 @@ impl<'a> Parser<'a> {
 
     /// ( "write" | "writeln" ) [ "(" 出力指定 { "," 出力指定 } ")" ]
     fn output_statement(&mut self) {
-        let err = || self.syntax_error([Kind::Write, Kind::Writeln].as_ref());
+        let err = || self.syntax_error([Kind::Write, Kind::Writeln].as_ref(), &[]);
 
         match self.lookahead {
             Some(ref l) => match l.kind {
@@ -575,7 +582,7 @@ impl<'a> Parser<'a> {
 
     /// 式 [ ":" "符号なし整数" ] | "文字列"
     fn output_format(&mut self) {
-        let err = || self.syntax_error([Kind::Plus, Kind::Minus, Kind::String].as_ref());
+        let err = || self.syntax_error([Kind::Plus, Kind::Minus, Kind::String].as_ref(), &[]);
 
         match self.lookahead {
             Some(ref l) => match l.kind {
