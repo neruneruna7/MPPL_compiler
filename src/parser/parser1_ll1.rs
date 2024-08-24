@@ -184,12 +184,25 @@ impl<'a> Parser<'a> {
         self.match_consume_token(Kind::Program);
         self.match_consume_token(Kind::Name);
         self.match_consume_token(Kind::Semicolon);
-        // self.block();
+        self.block();
         self.match_consume_token(Kind::Dot);
     }
 
     /// { 変数宣言部 | 副プログラム宣言 } 複合文
-    fn block(&mut self) {}
+    fn block(&mut self) {
+        while let Some(ref l) = self.lookahead {
+            match l.kind {
+                _ if self.match_syntax_first_token(SyntaxKind::VariableDeclaration) => {
+                    self.variable_declaration_part()
+                },
+                _ if self.match_syntax_first_token(SyntaxKind::SubprogramDeclaration) => {
+                    self.subprogram_declaration()
+                }
+                _ => break,
+            }
+        }
+        self.compound_statement();
+    }
 
     /// "var" 変数名の並び ":" 型 ";" { 変数名の並び ":" 型 ";" }
     fn variable_declaration_part(&mut self) {
@@ -229,32 +242,38 @@ impl<'a> Parser<'a> {
     /// 標準型 | 配列型
     /// 予約語に引っかかるのを防ぐため，アンダーバーをつけている
     fn type_(&mut self) {
+        let err = || {
+            self.syntax_error(
+                &[],
+                &[SyntaxKind::StandardType, SyntaxKind::ArrayType],
+            )
+        };
         match self.lookahead {
             Some(ref l) => match l.kind {
-                Kind::Array => self.array_type(),
-                Kind::Integer | Kind::Boolean | Kind::Char => self.standard_type(),
-                _ => self.syntax_error(
-                    [Kind::Array, Kind::Integer, Kind::Boolean, Kind::Char].as_ref(),
-                    &[],
-                ),
+                _ if self.match_syntax_first_token(SyntaxKind::ArrayType) => self.array_type(),
+                _ if self.match_syntax_first_token(SyntaxKind::StandardType) => self.standard_type(),
+                _ => err(),
             },
-            _ => self.syntax_error(
-                [Kind::Array, Kind::Integer, Kind::Boolean, Kind::Char].as_ref(),
-                &[],
-            ),
+            None => err(),
         }
     }
 
     /// "integer" | "boolean" | "char"
     fn standard_type(&mut self) {
+        let err = || {
+            self.syntax_error(
+                [Kind::Integer, Kind::Boolean, Kind::Char].as_ref(),
+                &[]
+            )
+        };
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Integer => self.match_consume_token(Kind::Integer),
                 Kind::Boolean => self.match_consume_token(Kind::Boolean),
                 Kind::Char => self.match_consume_token(Kind::Char),
-                _ => self.syntax_error([Kind::Integer, Kind::Boolean, Kind::Char].as_ref(), &[]),
+                _ => err(),
             },
-            _ => self.syntax_error([Kind::Integer, Kind::Boolean, Kind::Char].as_ref(), &[]),
+            None => err(),
         }
     }
 
@@ -269,7 +288,23 @@ impl<'a> Parser<'a> {
     }
 
     /// "procedure" 手続き名 [ 仮引数部 ] ";" [ 変数宣言部 ] 複合文 ";"
-    fn subprogram_declaration(&mut self) {}
+    fn subprogram_declaration(&mut self) {
+        self.match_consume_token(Kind::Procedure);
+        self.procedure_name();
+        if let Some(ref l) = self.lookahead {
+            if l.kind == Kind::LParen {
+                self.formal_parameters();
+            }
+        }
+        self.match_consume_token(Kind::Semicolon);
+        if let Some(ref l) = self.lookahead {
+            if l.kind == Kind::Var {
+                self.variable_declaration_part();
+            }
+        }
+        self.compound_statement();
+        self.match_consume_token(Kind::Semicolon);
+    }
 
     /// "名前"
     fn procedure_name(&mut self) {
@@ -312,8 +347,36 @@ impl<'a> Parser<'a> {
 
     /// 代入文 | 分岐文 | 繰り返し文 | 脱出文 | 手続き呼び出し文 | 複合文 | 戻り文 | 入力文
     /// | 出力文 | 複合文 | 空文
-    fn statement(&self) {
-        todo!()
+    fn statement(&mut self) {
+        match self.lookahead {
+            Some(ref l) => match l.kind {
+                _ if self.match_syntax_first_token(SyntaxKind::AssignmentStatement) => {
+                    self.assignment_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::ConditionStatement) => {
+                    self.condnition_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::IterationStatement) => {
+                    self.iteration_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::ExitStatement) => self.exit_statement(),
+                _ if self.match_syntax_first_token(SyntaxKind::CallStatement) => self.call_statement(),
+                _ if self.match_syntax_first_token(SyntaxKind::CompoundStatement) => {
+                    self.compound_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::ReturnStatement) => {
+                    self.return_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::InputStatement) => {
+                    self.input_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::OutputStatement) => {
+                    self.output_statement()
+                }
+                _ => {}
+            },
+            None => {}
+        }
     }
 
     /// "if" 式 "then" 文 [ "else" 文 ]
@@ -338,7 +401,7 @@ impl<'a> Parser<'a> {
     /// "while" 式 "do" 文
     fn iteration_statement(&mut self) {
         self.match_consume_token(Kind::While);
-        // self.expression();
+        self.expression();
         self.match_consume_token(Kind::DO);
         self.statement();
     }
@@ -353,13 +416,21 @@ impl<'a> Parser<'a> {
         self.match_consume_token(Kind::Call);
         self.procedure_name();
         self.match_consume_token(Kind::LParen);
-        // self.expression();
+        self.expressions();
         self.match_consume_token(Kind::RParen);
     }
 
     /// 式 { "," 式 }
     fn expressions(&mut self) {
-        todo!()
+        self.expression();
+        while let Some(ref l) = self.lookahead {
+            if l.kind == Kind::Comma {
+                self.match_consume_token(Kind::Comma);
+                self.expression();
+            } else {
+                break;
+            }
+        }
     }
 
     /// return
@@ -369,59 +440,90 @@ impl<'a> Parser<'a> {
 
     /// 左辺部 ":=" 式
     fn assignment_statement(&mut self) {
-        todo!()
+        self.left_part();
+        self.match_consume_token(Kind::Assign);
+        self.expression();
     }
 
     /// 変数
     fn left_part(&mut self) {
-        todo!()
+        self.variable();
     }
 
     /// 変数名 [ "[" 式 "]" ]
     fn variable(&mut self) {
-        todo!()
+        self.valriable_name();
+        if let Some(ref l) = self.lookahead {
+            if l.kind == Kind::LBracket {
+                self.match_consume_token(Kind::LBracket);
+                self.expression();
+                self.match_consume_token(Kind::RBracket);
+            }
+        }
     }
 
     /// 単純式 { 関係演算子 単純式 }
     fn expression(&mut self) {
-        todo!()
+        self.simple_expression();
+        if let Some(ref l) = self.lookahead {
+            if self.match_syntax_first_token(SyntaxKind::RelationalOperator) {
+                self.relational_operator();
+                self.simple_expression();
+            }
+        }
     }
 
     /// [ "+" | "-" ] 項 { 加法演算子 項 }
     fn simple_expression(&mut self) {
-        todo!()
+        if let Some(ref l) = self.lookahead {
+            match l.kind {
+                Kind::Plus => self.match_consume_token(Kind::Plus),
+                Kind::Minus => self.match_consume_token(Kind::Minus),
+                _ => {}
+            }
+        }
+
+        self.term();
+        while let Some(ref l) = self.lookahead {
+            if self.match_syntax_first_token(SyntaxKind::AdditiveOperator) {
+                self.additive_operator();
+                self.term();
+            } else {
+                break;
+            }
+        }
     }
 
     /// 因子 { 乗法演算子 因子 }
     fn term(&mut self) {
-        todo!()
+        self.factor();
+        while let Some(ref l) = self.lookahead {
+            if self.match_syntax_first_token(SyntaxKind::MultiplicativeOperator) {
+                self.multiplicative_operator();
+                self.factor();
+            } else {
+                break;
+            }
+        }
     }
 
     /// 変数 | 定数 | "(" 式 ")" | "not" 因子 | 標準型 "(" 式 ")"
     fn factor(&mut self) {
         let err = || {
             self.syntax_error(
-                [
-                    Kind::Name,
-                    Kind::UnsignedInteger,
-                    Kind::True,
-                    Kind::False,
-                    Kind::String,
-                    Kind::LParen,
-                    Kind::Not,
-                    Kind::Integer,
-                    Kind::Boolean,
-                    Kind::Char,
-                ]
-                .as_ref(),
-                &[],
+                [Kind::LParen, Kind::Not].as_ref(),
+                &[
+                    SyntaxKind::Variable,
+                    SyntaxKind::Constant,
+                    SyntaxKind::StandardType,
+                ],
             )
         };
 
         match self.lookahead {
             Some(ref l) => match l.kind {
-                Kind::Name => self.variable(),
-                Kind::UnsignedInteger | Kind::True | Kind::False | Kind::String => self.constant(),
+                _ if self.match_syntax_first_token(SyntaxKind::Variable) => self.variable(),
+                _ if self.match_syntax_first_token(SyntaxKind::Constant) => self.constant(),
                 Kind::LParen => {
                     self.match_consume_token(Kind::LParen);
                     self.expression();
@@ -431,7 +533,7 @@ impl<'a> Parser<'a> {
                     self.match_consume_token(Kind::Not);
                     self.factor();
                 }
-                Kind::Integer | Kind::Boolean | Kind::Char => {
+                _ if self.match_syntax_first_token(SyntaxKind::StandardType) => {
                     self.standard_type();
                     self.match_consume_token(Kind::LParen);
                     self.expression();
@@ -439,7 +541,7 @@ impl<'a> Parser<'a> {
                 }
                 _ => err(),
             },
-            _ => err(),
+            None => err(),
         }
     }
 
@@ -459,7 +561,7 @@ impl<'a> Parser<'a> {
                 Kind::String => self.match_consume_token(Kind::String),
                 _ => err(),
             },
-            _ => err(),
+            None => err(),
         }
     }
 
@@ -473,7 +575,7 @@ impl<'a> Parser<'a> {
                 Kind::And => self.match_consume_token(Kind::And),
                 _ => err(),
             },
-            _ => err(),
+            None => err(),
         }
     }
 
@@ -487,7 +589,7 @@ impl<'a> Parser<'a> {
                 Kind::Or => self.match_consume_token(Kind::Or),
                 _ => err(),
             },
-            _ => err(),
+            None => err(),
         }
     }
 
@@ -517,7 +619,7 @@ impl<'a> Parser<'a> {
                 Kind::GreatEq => self.match_consume_token(Kind::GreatEq),
                 _ => err(),
             },
-            _ => err(),
+            None => err(),
         }
     }
 
@@ -530,7 +632,7 @@ impl<'a> Parser<'a> {
                 Kind::Readln => self.match_consume_token(Kind::Readln),
                 _ => err(),
             },
-            _ => err(),
+            None => err(),
         }
 
         if let Some(ref l) = self.lookahead {
@@ -560,7 +662,7 @@ impl<'a> Parser<'a> {
                 Kind::Writeln => self.match_consume_token(Kind::Writeln),
                 _ => err(),
             },
-            _ => err(),
+            None => err(),
         }
 
         if let Some(ref l) = self.lookahead {
@@ -587,7 +689,7 @@ impl<'a> Parser<'a> {
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::String => self.match_consume_token(Kind::String),
-                Kind::Plus | Kind::Minus => {
+                _ if self.match_syntax_first_token(SyntaxKind::Expression) => {
                     self.expression();
 
                     if let Some(ref l) = self.lookahead {
@@ -599,7 +701,7 @@ impl<'a> Parser<'a> {
                 }
                 _ => err(),
             },
-            _ => err(),
+            None => err(),
         }
     }
 }
