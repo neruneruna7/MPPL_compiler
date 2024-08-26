@@ -1,6 +1,7 @@
 use crate::scan3::{self, Kind, Lexer, Token};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[allow(dead_code)]
 enum SyntaxKind {
     Program,
     Block,
@@ -205,6 +206,8 @@ impl<'a> Parser<'a> {
     fn variable_declaration_part(&mut self) {
         self.match_consume_token(Kind::Var);
         self.variable_names();
+        self.match_consume_token(Kind::Colon);
+        self.type_();
         self.match_consume_token(Kind::Semicolon);
         while let Some(ref l) = self.lookahead {
             if l.kind == Kind::Name {
@@ -337,36 +340,38 @@ impl<'a> Parser<'a> {
     /// 代入文 | 分岐文 | 繰り返し文 | 脱出文 | 手続き呼び出し文 | 複合文 | 戻り文 | 入力文
     /// | 出力文 | 複合文 | 空文
     fn statement(&mut self) {
-        if let Some(ref l) = self.lookahead { match l.kind {
-            _ if self.match_syntax_first_token(SyntaxKind::AssignmentStatement) => {
-                self.assignment_statement()
+        if let Some(ref l) = self.lookahead {
+            match l.kind {
+                _ if self.match_syntax_first_token(SyntaxKind::AssignmentStatement) => {
+                    self.assignment_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::ConditionStatement) => {
+                    self.condnition_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::IterationStatement) => {
+                    self.iteration_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::ExitStatement) => {
+                    self.exit_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::CallStatement) => {
+                    self.call_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::CompoundStatement) => {
+                    self.compound_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::ReturnStatement) => {
+                    self.return_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::InputStatement) => {
+                    self.input_statement()
+                }
+                _ if self.match_syntax_first_token(SyntaxKind::OutputStatement) => {
+                    self.output_statement()
+                }
+                _ => {}
             }
-            _ if self.match_syntax_first_token(SyntaxKind::ConditionStatement) => {
-                self.condnition_statement()
-            }
-            _ if self.match_syntax_first_token(SyntaxKind::IterationStatement) => {
-                self.iteration_statement()
-            }
-            _ if self.match_syntax_first_token(SyntaxKind::ExitStatement) => {
-                self.exit_statement()
-            }
-            _ if self.match_syntax_first_token(SyntaxKind::CallStatement) => {
-                self.call_statement()
-            }
-            _ if self.match_syntax_first_token(SyntaxKind::CompoundStatement) => {
-                self.compound_statement()
-            }
-            _ if self.match_syntax_first_token(SyntaxKind::ReturnStatement) => {
-                self.return_statement()
-            }
-            _ if self.match_syntax_first_token(SyntaxKind::InputStatement) => {
-                self.input_statement()
-            }
-            _ if self.match_syntax_first_token(SyntaxKind::OutputStatement) => {
-                self.output_statement()
-            }
-            _ => {}
-        } }
+        }
     }
 
     /// "if" 式 "then" 文 [ "else" 文 ]
