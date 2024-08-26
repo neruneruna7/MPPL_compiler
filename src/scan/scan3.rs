@@ -328,6 +328,9 @@ impl<'a> Lexer<'a> {
                 State::SingleQuote => {
                     if c == &'\'' {
                         state = State::Other;
+                        // 文字列中のシングルクォートは，2つで1つのシングルクォートとして扱う
+                        // そのため，ここで1つ目のシングルクォートを取り除く
+                        buf.pop();
                     } else {
                         break;
                     }
@@ -427,7 +430,7 @@ mod tests {
             (Kind::UnsignedInteger, TokenValue::Integer(9)),
             (Kind::UnsignedInteger, TokenValue::Integer(255)),
             (Kind::String, TokenValue::String("string".to_string())),
-            (Kind::String, TokenValue::String("string1''string2".to_string())),
+            (Kind::String, TokenValue::String("string1'string2".to_string())),
             (Kind::Plus, TokenValue::None),
             (Kind::Minus, TokenValue::None),
             (Kind::Star, TokenValue::None),
