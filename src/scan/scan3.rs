@@ -267,7 +267,7 @@ impl<'a> Lexer<'a> {
         match c {
             'a'..='z' | 'A'..='Z' => self.name_keyword(c),
             '0'..='9' => self.unsigned_integer(c),
-            '"' => self.string(),
+            '\'' => self.string(),
             _ => self.symbol(c),
         }
     }
@@ -318,23 +318,23 @@ impl<'a> Lexer<'a> {
         }
         let mut state = State::Other;
         let mut buf = String::new();
-        for c in self.chars.by_ref() {
+        while let Some(c) = self.chars.peek() {
+            println!("string: {}", c);
             match state {
                 State::Other => {
-                    if c == '\'' {
+                    if c == &'\'' {
                         state = State::SingleQuote;
-                    } else if c == '"' {
-                        break;
                     }
                 }
                 State::SingleQuote => {
-                    if c == '"' {
-                        return (Kind::Unknown, TokenValue::String(buf));
-                    } else if c != '\'' {
+                    if c == &'\'' {
                         state = State::Other;
+                    } else {
+                        break;
                     }
                 }
             }
+            let c = self.chars.next().unwrap();
             buf.push(c);
         }
         (Kind::String, TokenValue::String(buf))
