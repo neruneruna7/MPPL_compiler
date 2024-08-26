@@ -319,7 +319,6 @@ impl<'a> Lexer<'a> {
         let mut state = State::Other;
         let mut buf = String::new();
         while let Some(c) = self.chars.peek() {
-            println!("string: {}", c);
             match state {
                 State::Other => {
                     if c == &'\'' {
@@ -334,9 +333,14 @@ impl<'a> Lexer<'a> {
                     }
                 }
             }
-            let c = self.chars.next().unwrap();
-            buf.push(c);
+            buf.push(self.chars.next().unwrap());
         }
+
+        // 最後尾がシングルクォートであれば，取り除く
+        if buf.ends_with('\'') {
+            buf.pop();
+        }
+
         (Kind::String, TokenValue::String(buf))
     }
 
@@ -353,5 +357,102 @@ impl<'a> Lexer<'a> {
 
         let kind = match_symbol(&buf);
         (kind, TokenValue::None)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lexer() {
+        let source = "
+        {name}
+        name1 name2name3
+        {keyword}
+        program var array
+        of begin end
+        if then else
+        procedure return
+        call while do
+        not or div and
+        char integer boolean
+        read write readln writeln
+        true false break
+        {unsigned integer}
+        0 1 9 255 
+        {string}
+        'string'
+        'string1''string2'
+        {symbol}
+        + - * = <> < <= > >=
+        ( ) [ ] := . , : ;
+        ";
+        let mut lexer = Lexer::new(source);
+        let tokens = lexer.analyze();
+
+        let expected = vec![
+            (Kind::Name, TokenValue::String("name1".to_string())),
+            (Kind::Name, TokenValue::String("name2name3".to_string())),
+            (Kind::Program, TokenValue::None),
+            (Kind::Var, TokenValue::None),
+            (Kind::Array, TokenValue::None),
+            (Kind::Of, TokenValue::None),
+            (Kind::Begin, TokenValue::None),
+            (Kind::End, TokenValue::None),
+            (Kind::If, TokenValue::None),
+            (Kind::Then, TokenValue::None),
+            (Kind::Else, TokenValue::None),
+            (Kind::Procedure, TokenValue::None),
+            (Kind::Return, TokenValue::None),
+            (Kind::Call, TokenValue::None),
+            (Kind::While, TokenValue::None),
+            (Kind::DO, TokenValue::None),
+            (Kind::Not, TokenValue::None),
+            (Kind::Or, TokenValue::None),
+            (Kind::Div, TokenValue::None),
+            (Kind::And, TokenValue::None),
+            (Kind::Char, TokenValue::None),
+            (Kind::Integer, TokenValue::None),
+            (Kind::Boolean, TokenValue::None),
+            (Kind::Read, TokenValue::None),
+            (Kind::Write, TokenValue::None),
+            (Kind::Readln, TokenValue::None),
+            (Kind::Writeln, TokenValue::None),
+            (Kind::True, TokenValue::None),
+            (Kind::False, TokenValue::None),
+            (Kind::Break, TokenValue::None),
+            (Kind::UnsignedInteger, TokenValue::Integer(0)),
+            (Kind::UnsignedInteger, TokenValue::Integer(1)),
+            (Kind::UnsignedInteger, TokenValue::Integer(9)),
+            (Kind::UnsignedInteger, TokenValue::Integer(255)),
+            (Kind::String, TokenValue::String("string".to_string())),
+            (Kind::String, TokenValue::String("string1''string2".to_string())),
+            (Kind::Plus, TokenValue::None),
+            (Kind::Minus, TokenValue::None),
+            (Kind::Star, TokenValue::None),
+            (Kind::Equal, TokenValue::None),
+            (Kind::NotEq, TokenValue::None),
+            (Kind::Less, TokenValue::None),
+            (Kind::LessEq, TokenValue::None),
+            (Kind::Great, TokenValue::None),
+            (Kind::GreatEq, TokenValue::None),
+            (Kind::LParen, TokenValue::None),
+            (Kind::RParen, TokenValue::None),
+            (Kind::LBracket, TokenValue::None),
+            (Kind::RBracket, TokenValue::None),
+            (Kind::Assign, TokenValue::None),
+            (Kind::Dot, TokenValue::None),
+            (Kind::Comma, TokenValue::None),
+            (Kind::Colon, TokenValue::None),
+            (Kind::Semicolon, TokenValue::None),
+            (Kind::Eof, TokenValue::None),
+        ];
+
+        for (i, token) in tokens.iter().enumerate() {
+            println!("{:?}", token);
+            assert_eq!(token.kind, expected[i].0);
+            assert_eq!(token.value, expected[i].1);
+        }
     }
 }
