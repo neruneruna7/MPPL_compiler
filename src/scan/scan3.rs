@@ -430,7 +430,10 @@ mod tests {
             (Kind::UnsignedInteger, TokenValue::Integer(9)),
             (Kind::UnsignedInteger, TokenValue::Integer(255)),
             (Kind::String, TokenValue::String("string".to_string())),
-            (Kind::String, TokenValue::String("string1'string2".to_string())),
+            (
+                Kind::String,
+                TokenValue::String("string1'string2".to_string()),
+            ),
             (Kind::Plus, TokenValue::None),
             (Kind::Minus, TokenValue::None),
             (Kind::Star, TokenValue::None),
