@@ -4,6 +4,7 @@ use crate::scan3::{self, Kind, Lexer, Token};
 // どんなトークンを期待していたが，実際にはどんなトークンが来たかを表現する
 #[derive(Debug)]
 pub struct SyntaxError {
+    lexeicalized_source: String,
     expected_token: Vec<scan3::Kind>,
     expected_syntax: Vec<SyntaxKind>,
     found: Option<Token>,
@@ -11,11 +12,18 @@ pub struct SyntaxError {
 
 impl SyntaxError {
     pub fn new(
+        perser: &Parser,
         expected_token: Vec<scan3::Kind>,
         expected_syntax: Vec<SyntaxKind>,
         found: Option<Token>,
     ) -> Self {
+        let sliced_source = if let Some(ref l) = perser.lookahead {
+            &perser.lexer.source[..l.start]
+        } else {
+            perser.lexer.source
+        };
         Self {
+            lexeicalized_source: sliced_source.to_string(),
             expected_token,
             expected_syntax,
             found,
@@ -45,13 +53,16 @@ impl std::fmt::Display for SyntaxError {
 
         write!(
             f,
-            "expect token= {:?}, expect syntax= {:?} but found {:?}",
-            expected_token, expected_syntax, found
+            "source code:\n\n {} \n\n expect token= {:?}, expect syntax= {:?} but found {:?}",
+            self.lexeicalized_source, expected_token, expected_syntax, found
         )
     }
 }
 
 impl std::error::Error for SyntaxError {}
+
+
+type Result<T> = std::result::Result<T, SyntaxError>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[allow(dead_code)]
@@ -594,7 +605,7 @@ impl<'a> Parser<'a> {
     }
 
     /// "符号なし整数" | "true" | "false" | "文字列"
-    fn constant(&mut self) {
+    fn constant(&mut self) -> Result<()> {
         let err = || {
             self.syntax_error(
                 [Kind::UnsignedInteger, Kind::True, Kind::False, Kind::String].as_ref(),
@@ -611,6 +622,8 @@ impl<'a> Parser<'a> {
             },
             None => err(),
         }
+
+        Ok(())
     }
 
     /// "*" | "div" | "and"
