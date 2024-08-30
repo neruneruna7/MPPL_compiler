@@ -1,12 +1,14 @@
 use crate::scan3::{self, Kind, Lexer, Token};
 
+
+
+type Expected = Vec<scan3::Kind>;
 // 独自のエラー型を定義
 // どんなトークンを期待していたが，実際にはどんなトークンが来たかを表現する
 #[derive(Debug)]
 pub struct SyntaxError {
     lexeicalized_source: String,
     expected_token: Vec<scan3::Kind>,
-    expected_syntax: Vec<SyntaxKind>,
     found: Option<Token>,
 }
 
@@ -14,7 +16,6 @@ impl SyntaxError {
     pub fn new(
         perser: &Parser,
         expected_token: Vec<scan3::Kind>,
-        expected_syntax: Vec<SyntaxKind>,
         found: Option<Token>,
     ) -> Self {
         let sliced_source = if let Some(ref l) = perser.lookahead {
@@ -25,8 +26,26 @@ impl SyntaxError {
         Self {
             lexeicalized_source: sliced_source.to_string(),
             expected_token,
-            expected_syntax,
             found,
+        }
+    }
+
+    pub fn append_expected_token(&mut self, token: &[Kind]) {
+        self.expected_token.extend_from_slice(token);
+    }
+
+
+    pub fn compose(
+        &mut self,
+        other: SyntaxResult,
+    ){
+        match other {
+            Ok(t) => {
+                self.append_expected_token(&t);
+            }
+            Err(e) => {
+                self.expected_token.extend_from_slice(&e.expected_token);
+            }
         }
     }
 }
@@ -39,12 +58,6 @@ impl std::fmt::Display for SyntaxError {
             .map(|k| format!("{:?}", k))
             .collect::<Vec<String>>()
             .join(", ");
-        let expected_syntax = self
-            .expected_syntax
-            .iter()
-            .map(|k| format!("{:?}", k))
-            .collect::<Vec<String>>()
-            .join(", ");
         let found = if let Some(ref l) = self.found {
             format!("{:?}", l)
         } else {
@@ -53,8 +66,8 @@ impl std::fmt::Display for SyntaxError {
 
         write!(
             f,
-            "source code:\n\n {} \n\n expect token= {:?}, expect syntax= {:?} but found {:?}",
-            self.lexeicalized_source, expected_token, expected_syntax, found
+            "source code:\n\n {} \n\n expect token= {:?} but found {:?}",
+            self.lexeicalized_source, expected_token,  found
         )
     }
 }
@@ -62,7 +75,7 @@ impl std::fmt::Display for SyntaxError {
 impl std::error::Error for SyntaxError {}
 
 
-type Result<T> = std::result::Result<T, SyntaxError>;
+type SyntaxResult = std::result::Result<Expected, SyntaxError>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[allow(dead_code)]
@@ -568,6 +581,11 @@ impl<'a> Parser<'a> {
 
     /// 変数 | 定数 | "(" 式 ")" | "not" 因子 | 標準型 "(" 式 ")"
     fn factor(&mut self) {
+        let mut se = SyntaxError::new(
+            self,
+            [Kind::LParen, Kind::Not].to_vec(),
+            self.lookahead.clone(),
+        );
         let err = || {
             self.syntax_error(
                 [Kind::LParen, Kind::Not].as_ref(),
@@ -582,7 +600,7 @@ impl<'a> Parser<'a> {
         match self.lookahead {
             Some(ref l) => match l.kind {
                 _ if self.match_syntax_first_token(SyntaxKind::Variable) => self.variable(),
-                _ if self.match_syntax_first_token(SyntaxKind::Constant) => self.constant(),
+                _ if self.match_syntax_first_token(SyntaxKind::Constant) => se.compose(self.constant()),
                 Kind::LParen => {
                     self.match_consume_token(Kind::LParen);
                     self.expression();
@@ -598,75 +616,82 @@ impl<'a> Parser<'a> {
                     self.expression();
                     self.match_consume_token(Kind::RParen);
                 }
-                _ => err(),
+                _ => Err(se).unwrap(),
             },
             None => err(),
         }
     }
 
     /// "符号なし整数" | "true" | "false" | "文字列"
-    fn constant(&mut self) -> Result<()> {
-        let err = || {
-            self.syntax_error(
-                [Kind::UnsignedInteger, Kind::True, Kind::False, Kind::String].as_ref(),
-                &[],
-            )
-        };
+    fn constant(&mut self) -> SyntaxResult {
+        let expected_token = [Kind::UnsignedInteger, Kind::True, Kind::False, Kind::String];
+        let mut syntax_err = SyntaxError::new(
+            self,
+            expected_token.to_vec(),
+            self.lookahead.clone(),
+        );
+
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::UnsignedInteger => self.match_consume_token(Kind::UnsignedInteger),
                 Kind::True => self.match_consume_token(Kind::True),
                 Kind::False => self.match_consume_token(Kind::False),
                 Kind::String => self.match_consume_token(Kind::String),
-                _ => err(),
+                _ => Err(syntax_err)?,
             },
-            None => err(),
+            None => Err(syntax_err)?,
         }
 
-        Ok(())
+        Ok(expected_token.to_vec())
     }
 
     /// "*" | "div" | "and"
-    fn multiplicative_operator(&mut self) {
+    fn multiplicative_operator(&mut self) -> SyntaxResult {
+
+        let et = [Kind::Star, Kind::Div, Kind::And];
+        let mut se = SyntaxError::new(self, et.to_vec(), self.lookahead.clone());
+
         let err = || self.syntax_error([Kind::Star, Kind::Div, Kind::And].as_ref(), &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Star => self.match_consume_token(Kind::Star),
                 Kind::Div => self.match_consume_token(Kind::Div),
                 Kind::And => self.match_consume_token(Kind::And),
-                _ => err(),
+                _ => 
+                    Err(se)?,
             },
-            None => err(),
+            None => Err(se)?,
         }
+
+        Ok(et.to_vec())
     }
 
     /// "+" | "-" | "or"
-    fn additive_operator(&mut self) {
+    fn additive_operator(&mut self) -> SyntaxResult {
+        let et = [Kind::Plus, Kind::Minus, Kind::Or];
+        let mut se = SyntaxError::new(self, et.to_vec(), self.lookahead.clone());
         let err = || self.syntax_error([Kind::Plus, Kind::Minus, Kind::Or].as_ref(), &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Plus => self.match_consume_token(Kind::Plus),
                 Kind::Minus => self.match_consume_token(Kind::Minus),
                 Kind::Or => self.match_consume_token(Kind::Or),
-                _ => err(),
+                _ => Err(se)?,
             },
-            None => err(),
+            None => Err(se)?,
+        
         }
+
+        Ok(et.to_vec())
     }
 
     /// "=" | "<>" | "<" | "<=" | ">" | ">="
-    fn relational_operator(&mut self) {
+    fn relational_operator(&mut self) -> SyntaxResult {
+        let et = [Kind::Equal, Kind::NotEq, Kind::Less, Kind::LessEq, Kind::Great, Kind::GreatEq];
+        let mut se = SyntaxError::new(self, et.to_vec(), self.lookahead.clone());
         let err = || {
             self.syntax_error(
-                [
-                    Kind::Equal,
-                    Kind::NotEq,
-                    Kind::Less,
-                    Kind::LessEq,
-                    Kind::Great,
-                    Kind::GreatEq,
-                ]
-                .as_ref(),
+                &et,
                 &[],
             )
         };
@@ -678,10 +703,12 @@ impl<'a> Parser<'a> {
                 Kind::LessEq => self.match_consume_token(Kind::LessEq),
                 Kind::Great => self.match_consume_token(Kind::Great),
                 Kind::GreatEq => self.match_consume_token(Kind::GreatEq),
-                _ => err(),
+                _ => Err(se)?,
             },
-            None => err(),
+            None => Err(se)?,
         }
+
+        Ok(et.to_vec())
     }
 
     /// ( "read" | "readln" ) [ "(" 変数 { "," 変数 } ")" ]
