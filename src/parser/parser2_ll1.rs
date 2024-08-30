@@ -1,5 +1,7 @@
 use crate::scan3::{self, Kind, Lexer, Token};
 
+// エラー時に，期待したトークンの集合を返したかったが，いま試している方法ではうまくいかなさそうだ
+// FIRST集合を求めれば，それをもとにできそうだが
 
 
 type Expected = Vec<scan3::Kind>;
@@ -228,16 +230,32 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn match_consume_token(&mut self, kind: scan3::Kind) {
+    fn match_consume_token(&mut self, kind: scan3::Kind) -> SyntaxResult {
+        let et = [kind];
+        let mut se = SyntaxError::new(self, et.to_vec(), self.lookahead.clone());
         if let Some(ref l) = self.lookahead {
             if l.kind == kind {
                 self.lookahead = Some(self.lexer.read_next_token());
-                return;
+                return Ok(et.to_vec());
             }
         }
 
-        self.syntax_error([kind].as_ref(), [].as_ref());
-    }
+        // self.syntax_error([kind].as_ref(), [].as_ref());
+        Err(se)    }
+
+    // fn match_consume_token_test(&mut self, kind: scan3::Kind) -> SyntaxResult {
+    //     let et = [kind];
+    //     let mut se = SyntaxError::new(self, et.to_vec(), self.lookahead.clone());
+    //     if let Some(ref l) = self.lookahead {
+    //         if l.kind == kind {
+    //             self.lookahead = Some(self.lexer.read_next_token());
+    //             return Ok(et.to_vec());
+    //         }
+    //     }
+
+    //     // self.syntax_error([kind].as_ref(), [].as_ref());
+    //     Err(se)
+    // }
 
     fn syntax_error(&self, expected_token: &[scan3::Kind], expected_syntax: &[SyntaxKind]) {
         let sliced_source = if let Some(ref l) = self.lookahead {
@@ -254,13 +272,14 @@ impl<'a> Parser<'a> {
 
     /// パースの開始
     /// "program" "名前" ";" ブロック "."
-    pub fn parse_program(&mut self) {
+    pub fn parse_program(&mut self) -> SyntaxResult {
         // マクロ構文のprogramに該当
-        self.match_consume_token(Kind::Program);
+        self.match_consume_token(Kind::Program)?;
         self.match_consume_token(Kind::Name);
         self.match_consume_token(Kind::Semicolon);
         self.block();
         self.match_consume_token(Kind::Dot);
+        Ok([].to_vec())
     }
 
     /// { 変数宣言部 | 副プログラム宣言 } 複合文
@@ -318,31 +337,37 @@ impl<'a> Parser<'a> {
 
     /// 標準型 | 配列型
     /// 予約語に引っかかるのを防ぐため，アンダーバーをつけている
-    fn type_(&mut self) {
-        let err = || self.syntax_error(&[], &[SyntaxKind::StandardType, SyntaxKind::ArrayType]);
+    fn type_(&mut self) -> SyntaxResult {
+        let et = [Kind::StandardType, Kind::ArrayType];
+        let se = SyntaxError::new(self, et.to_vec(), self.lookahead.clone());
+        // let err = || self.syntax_error(&[], &[SyntaxKind::StandardType, SyntaxKind::ArrayType]);
+        let err = || Err(se);
+        
         match self.lookahead {
             Some(ref l) => match l.kind {
                 _ if self.match_syntax_first_token(SyntaxKind::ArrayType) => self.array_type(),
                 _ if self.match_syntax_first_token(SyntaxKind::StandardType) => {
                     self.standard_type()
                 }
-                _ => err(),
+                _ => err()?,
             },
-            None => err(),
+            None => err()?,
         }
     }
 
     /// "integer" | "boolean" | "char"
-    fn standard_type(&mut self) {
+    fn standard_type(&mut self) -> SyntaxResult {
+        let et = [Kind::Integer, Kind::Boolean, Kind::Char];
+        let se = SyntaxError::new(self, et.to_vec(), self.lookahead.clone());
         let err = || self.syntax_error([Kind::Integer, Kind::Boolean, Kind::Char].as_ref(), &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Integer => self.match_consume_token(Kind::Integer),
                 Kind::Boolean => self.match_consume_token(Kind::Boolean),
                 Kind::Char => self.match_consume_token(Kind::Char),
-                _ => err(),
+                _ => Err(se)?,
             },
-            None => err(),
+            None => Err(se)?,
         }
     }
 
