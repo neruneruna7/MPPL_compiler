@@ -40,7 +40,7 @@ fn main() {
         },
         Rule {
             left: "B".to_string(),
-            right: "b".to_string(),
+            right: "d".to_string(),
         },
         Rule {
             left: "C".to_string(),
@@ -68,23 +68,24 @@ fn calc_first_set(rules: Vec<Rule>) -> HashMap<String, HashSet<String>> {
     let mut first_set = HashMap::new();
     // 文法規則すべてについて，FIRST集合を求める
     for r in RULES.get().unwrap().iter() {
-        let set = first(&r.left);
+        // 空白で区切る
+        let left = r.left.split_whitespace().collect::<Vec<&str>>();
+
+        let set = first(&left);
         first_set.insert(r.left.clone(), set);
     }
 
     first_set
 }
 
-fn first(a: &str) -> HashSet<String> {
-    // 空白で区切る
-    let a = a.split_whitespace().collect::<Vec<&str>>();
+fn first(a: &[&str]) -> HashSet<String> {
     // 0 FIRST(a)を空集合に初期化
     let mut first_a = HashSet::new();
 
     // 以下のステップを，付け加えるものがなくなるまで繰り返す
     loop {
         let before = first_a.clone();
-        match a.as_slice() {
+        match a {
             // 1 aが空系列ならFIRST(a)に空系列を追加
             ["ε"] => {
                 first_a.insert("ε".to_string());
@@ -100,40 +101,47 @@ fn first(a: &str) -> HashSet<String> {
                 let rules = RULES.get().unwrap();
                 for r in rules.iter() {
                     if r.left == a {
-                        let set = first(&r.right);
+                        let right = r.right.split_whitespace().collect::<Vec<&str>>();
+                        let set = first(&right);
                         first_a.extend(set);
                     }
                 }
             }
             // 5 aが b | y の場合 FIRST(b)とFIRST(y)をFIRST(a)に付け加える
-            [b, "|", y] => {
-                let set_b = first(b);
-                let set_y = first(y);
+            _ if matches!(is_pattern5(a), Some(b)) => {
+                let (b, y) = is_pattern5(a).unwrap();
+                let set_b = first(&b);
+                let set_y = first(&y);
                 first_a.extend(set_b);
                 first_a.extend(set_y);
             }
             // 6 aが{ b } の場合 FIRST(b)とεをFIRST(a)に付け加える
-            ["{", b, "}"] => {
-                let set_b = first(b);
+            _ if matches!(is_pattern6(a), Some(b)) => {
+                // matches! でとった変数のスコープは，ここにまでは持ってこれないっぽい？
+                // ので，仕方なくここでもう一度関数を呼ぶ
+                let b = is_pattern6(a).unwrap();
+                let set_b = first(&b);
                 first_a.extend(set_b);
                 first_a.insert("ε".to_string());
             }
             // 7 aが[ b ] の場合 FIRST(b)とεをFIRST(a)に付け加える
-            ["[", b, "]"] => {
-                let set_b = first(b);
+            _ if matches!(is_pattern7(a), Some(b)) => {
+                let b = is_pattern7(a).unwrap();
+                let set_b = first(&b);
                 first_a.extend(set_b);
                 first_a.insert("ε".to_string());
             }
             // 8 aが( b )の場合 FIRST(b)をFIRST(a)に付け加える
-            ["(", b, ")"] => {
-                let set_b = first(b);
+            _ if matches!(is_pattern8(a), Some(b)) => {
+                let b = is_pattern8(a).unwrap();
+                let set_b = first(&b);
                 first_a.extend(set_b);
             }
             // 4 aが長さ2以上の系列の場合(a=Xbとする)
             _ if a.len() >= 2 => {
                 // 4-1 FIRST(X)がεを含まないなら，FIRST(X)をFIRST(a)に付け加える
                 let x = a[0];
-                let mut set_x = first(x);
+                let mut set_x = first(&[x]);
                 if !set_x.contains("ε") {
                     first_a.extend(set_x);
                 }
@@ -142,7 +150,7 @@ fn first(a: &str) -> HashSet<String> {
                     set_x.remove("ε");
                     first_a.extend(set_x);
                     let b = a[1];
-                    let set_b = first(b);
+                    let set_b = first(&[b]);
                     first_a.extend(set_b);
                 }
             }
@@ -159,6 +167,113 @@ fn first(a: &str) -> HashSet<String> {
     }
 
     first_a
+}
+
+// とにかく，はじめの|の部分とそれ以降の部分に分ける
+// そうすれば，あとは再帰的に解決できるか
+fn is_pattern5<'a>(a: &[&'a str]) -> Option<(Vec<&'a str>, Vec<&'a str>)> {
+    // | が含まれてないならその時点でfalse
+    if !a.iter().any(|x| x.contains('|')) {
+        return None;
+    }
+    let mut symbol_count = HashMap::new();
+    symbol_count.insert("(", 0);
+    symbol_count.insert("[", 0);
+    symbol_count.insert("{", 0);
+
+    let mut left = Vec::new();
+    for i in a.iter() {
+        match *i {
+            "(" => {
+                let c = symbol_count.get_mut(&"(").unwrap();
+                *c += 1;
+            }
+            ")" => {
+                let c = symbol_count.get_mut(&"(").unwrap();
+                *c -= 1;
+            }
+            "{" => {
+                let c = symbol_count.get_mut(&"{").unwrap();
+                *c += 1;
+            }
+            "}" => {
+                let c = symbol_count.get_mut(&"{").unwrap();
+                *c -= 1;
+            }
+            "[" => {
+                let c = symbol_count.get_mut(&"[").unwrap();
+                *c += 1;
+            }
+            "]" => {
+                let c = symbol_count.get_mut(&"[").unwrap();
+                *c -= 1;
+            }
+            "|" => {
+                let right = a[left.len()..].as_ref();
+                return Some((left, right.to_vec()));
+            }
+            _ => {
+                unreachable!()
+            }
+        }
+        left.push(*i);
+    }
+    // ( { a } | b | [ c ] ) { a }
+    todo!()
+}
+
+fn is_pattern6<'a>(a: &[&'a str]) -> Option<Vec<&'a str>> {
+    if let Some(s) = a.iter().nth(0) {
+        if *s == "{" {
+            let mut buf = Vec::new();
+            let mut itr = a.iter();
+            itr.next().unwrap();
+            for i in itr {
+                if *i == "}" {
+                    break;
+                }
+                buf.push(*i)
+            }
+            return Some(buf);
+        }
+    }
+    None
+}
+
+fn is_pattern7<'a>(a: &[&'a str]) -> Option<Vec<&'a str>> {
+    if let Some(s) = a.iter().nth(0) {
+        if *s == "[" {
+            let mut buf = Vec::new();
+            let mut itr = a.iter();
+            itr.next().unwrap();
+            for i in itr {
+                if *i == "]" {
+                    break;
+                }
+                buf.push(*i)
+            }
+            return Some(buf);
+        }
+    }
+    None
+}
+
+fn is_pattern8<'a>(a: &[&'a str]) -> Option<Vec<&'a str>> {
+    if let Some(s) = a.iter().nth(0) {
+        if *s == "(" {
+            let mut buf = Vec::new();
+            let mut itr = a.iter();
+            itr.next().unwrap();
+            for i in itr {
+                if *i == ")" {
+                    break;
+                }
+                buf.push(*i)
+            }
+            return Some(buf);
+        }
+    }
+    None
 }
 
 // 文字列が終端記号かどうか
