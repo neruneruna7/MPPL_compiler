@@ -105,6 +105,21 @@ fn first(a: &[&str]) -> HashSet<String> {
                 }
             }
         }
+        // 4 aが長さ2以上の系列の場合(a=Xbとする)
+        if let Some((x, b)) = is_pattern4(a) {
+            // 4-1 FIRST(X)がεを含まないなら，FIRST(X)をFIRST(a)に付け加える
+            let mut set_x = first(&x);
+            if !set_x.contains("ε") {
+                first_a.extend(set_x);
+            }
+            // 4-1 FIRST(X)がεを含むなら，FIRST(X)からεを取り除いたものとFIRST(b)をFIRST(a)に付け加える
+            else {
+                set_x.remove("ε");
+                first_a.extend(set_x);
+                let set_b = first(&b);
+                first_a.extend(set_b);
+            }
+        }
         // 5 aが b | y の場合 FIRST(b)とFIRST(y)をFIRST(a)に付け加える
         if let Some((b, y)) = is_pattern5(a) {
             let set_b = first(&b);
@@ -124,22 +139,10 @@ fn first(a: &[&str]) -> HashSet<String> {
             first_a.extend(set_b);
             first_a.insert("ε".to_string());
         }
-        // 4 aが長さ2以上の系列の場合(a=Xbとする)
-        if a.len() >= 2 {
-            // 4-1 FIRST(X)がεを含まないなら，FIRST(X)をFIRST(a)に付け加える
-            let x = a[0];
-            let mut set_x = first(&[x]);
-            if !set_x.contains("ε") {
-                first_a.extend(set_x);
-            }
-            // 4-1 FIRST(X)がεを含むなら，FIRST(X)からεを取り除いたものとFIRST(b)をFIRST(a)に付け加える
-            else {
-                set_x.remove("ε");
-                first_a.extend(set_x);
-                let b = a[1];
-                let set_b = first(&[b]);
-                first_a.extend(set_b);
-            }
+        // 8 aが( b ) の場合 FIRST(b)をFIRST(a)に付け加える
+        if let Some(b) = is_pattern8(a) {
+            let set_b = first(&b);
+            first_a.extend(set_b);
         }
 
         // 付け加えるものがなくなったら終了
@@ -202,7 +205,7 @@ fn is_pattern4<'a>(a: &[&'a str]) -> Option<(Vec<&'a str>, Vec<&'a str>)> {
                         left.push(*i);
                     }
                     let right = a[left.len()..].as_ref();
-                    return Some((left, right.to_vec()));                    
+                    return Some((left, right.to_vec()));
                 }
             }
         }
@@ -251,11 +254,10 @@ fn is_pattern5<'a>(a: &[&'a str]) -> Option<(Vec<&'a str>, Vec<&'a str>)> {
                 *c -= 1;
             }
             "|" if symbol_count.values().all(|x| *x == 0) => {
-                let right = a[left.len()+1..].as_ref();
+                let right = a[left.len() + 1..].as_ref();
                 return Some((left, right.to_vec()));
             }
-            _ => {
-            }
+            _ => {}
         }
         left.push(*i);
     }
@@ -405,12 +407,12 @@ mod tests {
         let r = is_pattern5(&a);
         assert_eq!(r, None);
 
-        let a = ["[", "a", "]","|",  "B"];
+        let a = ["[", "a", "]", "|", "B"];
         let (b, y) = is_pattern5(&a).unwrap();
         assert_eq!(b, ["[", "a", "]"]);
         assert_eq!(y, ["B"]);
 
-        let a = ["{", "a", "}","|", "B"];
+        let a = ["{", "a", "}", "|", "B"];
         let (b, y) = is_pattern5(&a).unwrap();
         assert_eq!(b, ["{", "a", "}"]);
         assert_eq!(y, ["B"]);
