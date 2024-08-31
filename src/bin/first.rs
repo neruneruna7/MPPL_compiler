@@ -417,4 +417,37 @@ mod tests {
         assert_eq!(b, ["{", "a", "}"]);
         assert_eq!(y, ["B"]);
     }
+
+    #[test]
+    fn test_is_pattern6() {
+        let a = ["{", "a", "}", "B"];
+        let b = is_pattern6(&a).unwrap();
+        assert_eq!(b, ["a"]);
+
+        let a = ["a", "B"];
+        let r = is_pattern6(&a);
+        assert_eq!(r, None);
+    }
+
+    #[test]
+    fn test_is_pattern7() {
+        let a = ["[", "a", "]", "B"];
+        let b = is_pattern7(&a).unwrap();
+        assert_eq!(b, ["a"]);
+
+        let a = ["a", "B"];
+        let r = is_pattern7(&a);
+        assert_eq!(r, None);
+    }
+
+    #[test]
+    fn test_is_pattern8() {
+        let a = ["(", "a", ")", "B"];
+        let b = is_pattern8(&a).unwrap();
+        assert_eq!(b, ["a"]);
+
+        let a = ["a", "B"];
+        let r = is_pattern8(&a);
+        assert_eq!(r, None);
+    }
 }
