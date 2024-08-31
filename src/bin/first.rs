@@ -11,7 +11,7 @@
 // <D> ::= { "d" } "b"
 use std::{
     collections::{HashMap, HashSet},
-    sync::OnceLock,
+    sync::{LazyLock, Mutex, OnceLock},
 };
 
 #[derive(Debug, Clone)]
@@ -20,35 +20,30 @@ struct Rule {
     right: String,
 }
 
-struct FirstSet {
-    first: Vec<String>,
-}
+// #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+// struct FirstSet {
+//     left: Vec<String>,
+//     right: HashSet<String>,
+// }
+
+type FirstSets = HashMap<Vec<String>, HashSet<String>>;
+
+static COMPLETED_FIRST_SET: LazyLock<Mutex<FirstSets>> =
+    LazyLock::new(|| Mutex::new(FirstSets::new()));
 
 fn main() {
     let rules = [
         Rule {
-            left: "A".to_string(),
-            right: "B".to_string(),
+            left: "E".to_string(),
+            right: "T { ( + | - ) } T".to_string(),
         },
         Rule {
-            left: "A".to_string(),
-            right: "C".to_string(),
+            left: "T".to_string(),
+            right: "{ ( * | / ) } F".to_string(),
         },
         Rule {
-            left: "A".to_string(),
-            right: "D".to_string(),
-        },
-        Rule {
-            left: "B".to_string(),
-            right: "d".to_string(),
-        },
-        Rule {
-            left: "C".to_string(),
-            right: "[ c ] b".to_string(),
-        },
-        Rule {
-            left: "D".to_string(),
-            right: "{ d } b".to_string(),
+            left: "F".to_string(),
+            right: "lp E rp | i | n".to_string(),
         },
     ];
 
@@ -56,6 +51,7 @@ fn main() {
     for (k, v) in first_set.iter() {
         println!("FIRST({}) = {:?}", k, v);
     }
+    // println!("{:?}", COMPLETED_FIRST_SET.lock().unwrap());
 }
 
 // Once_cellで1度だけ書き換え可能な文法規則のベクタ
@@ -79,6 +75,14 @@ fn calc_first_set(rules: Vec<Rule>) -> HashMap<String, HashSet<String>> {
 }
 
 fn first(a: &[&str]) -> HashSet<String> {
+    // FIRST(a)が計算済みなら，その値を返す
+    if let Some(set) = COMPLETED_FIRST_SET
+        .lock()
+        .unwrap()
+        .get(&a.iter().map(|x| x.to_string()).collect::<Vec<String>>())
+    {
+        return set.clone();
+    }
     // 0 FIRST(a)を空集合に初期化
     let mut first_a = HashSet::new();
 
@@ -112,12 +116,14 @@ fn first(a: &[&str]) -> HashSet<String> {
             if !set_x.contains("ε") {
                 first_a.extend(set_x);
             }
-            // 4-1 FIRST(X)がεを含むなら，FIRST(X)からεを取り除いたものとFIRST(b)をFIRST(a)に付け加える
+            // 4-2 FIRST(X)がεを含むなら，FIRST(X)からεを取り除いたものとFIRST(b)をFIRST(a)に付け加える
             else {
                 set_x.remove("ε");
+                println!("x: {:?}, b: {:?}, {:?}, first_a:{:?}", x, b, set_x, first_a);
                 first_a.extend(set_x);
                 let set_b = first(&b);
                 first_a.extend(set_b);
+                println!("extended first_a:{:?}", first_a);
             }
         }
         // 5 aが b | y の場合 FIRST(b)とFIRST(y)をFIRST(a)に付け加える
@@ -147,6 +153,11 @@ fn first(a: &[&str]) -> HashSet<String> {
 
         // 付け加えるものがなくなったら終了
         if before == first_a {
+            // FIRST(a)を計算済みとして保存
+            COMPLETED_FIRST_SET
+                .lock()
+                .unwrap()
+                .insert(a.iter().map(|x| x.to_string()).collect(), first_a.clone());
             break;
         }
     }
@@ -265,64 +276,53 @@ fn is_pattern5<'a>(a: &[&'a str]) -> Option<(Vec<&'a str>, Vec<&'a str>)> {
 }
 
 fn is_pattern6<'a>(a: &[&'a str]) -> Option<Vec<&'a str>> {
-    if let Some(s) = a.iter().nth(0) {
-        if *s == "{" {
-            let mut buf = Vec::new();
-            let mut itr = a.iter();
-            itr.next().unwrap();
-            for i in itr {
-                if *i == "}" {
-                    break;
-                }
-                buf.push(*i)
-            }
-            return Some(buf);
-        }
+    if a.starts_with(&["{"]) && a.ends_with(&["}"]) {
+        let buf = a
+            .iter()
+            .skip(1)
+            .take(a.len() - 2)
+            .map(|x| *x)
+            .collect::<Vec<&str>>();
+        return Some(buf);
     }
     None
 }
 
 fn is_pattern7<'a>(a: &[&'a str]) -> Option<Vec<&'a str>> {
-    if let Some(s) = a.iter().nth(0) {
-        if *s == "[" {
-            let mut buf = Vec::new();
-            let mut itr = a.iter();
-            itr.next().unwrap();
-            for i in itr {
-                if *i == "]" {
-                    break;
-                }
-                buf.push(*i)
-            }
-            return Some(buf);
-        }
+    if a.starts_with(&["["]) && a.ends_with(&["]"]) {
+        let buf = a
+            .iter()
+            .skip(1)
+            .take(a.len() - 2)
+            .map(|x| *x)
+            .collect::<Vec<&str>>();
+        return Some(buf);
     }
     None
 }
 
 fn is_pattern8<'a>(a: &[&'a str]) -> Option<Vec<&'a str>> {
-    if let Some(s) = a.iter().nth(0) {
-        if *s == "(" {
-            let mut buf = Vec::new();
-            let mut itr = a.iter();
-            itr.next().unwrap();
-            for i in itr {
-                if *i == ")" {
-                    break;
-                }
-                buf.push(*i)
-            }
-            return Some(buf);
-        }
+    if a.starts_with(&["("]) && a.ends_with(&[")"]) {
+        let buf = a
+            .iter()
+            .skip(1)
+            .take(a.len() - 2)
+            .map(|x| *x)
+            .collect::<Vec<&str>>();
+        return Some(buf);
     }
     None
 }
 
 // 文字列が終端記号かどうか
-// すべて小文字なら終端記号
+// 大文字がないなら終端記号
 // キャメルケースは非終端記号
+// ( { [ | は非終端記号
 fn is_terminal(s: &str) -> bool {
-    s.chars().all(|c| c.is_lowercase())
+    if s == "(" || s == "{" || s == "[" || s == "|" {
+        return false;
+    }
+    !s.chars().any(|x| x.is_uppercase())
 }
 
 #[cfg(test)]
@@ -371,6 +371,11 @@ mod tests {
         assert_eq!(is_terminal("A"), false);
         assert_eq!(is_terminal("abc"), true);
         assert_eq!(is_terminal("Abc"), false);
+        assert_eq!(is_terminal("["), false);
+        assert_eq!(is_terminal("{"), false);
+        assert_eq!(is_terminal("("), false);
+        assert_eq!(is_terminal("|"), false);
+        assert_eq!(is_terminal("*"), true);
     }
 
     #[test]
@@ -420,9 +425,17 @@ mod tests {
 
     #[test]
     fn test_is_pattern6() {
-        let a = ["{", "a", "}", "B"];
+        let a = ["{", "a", "}"];
         let b = is_pattern6(&a).unwrap();
         assert_eq!(b, ["a"]);
+
+        let a = ["{", "a", "}", "B"];
+        let r = is_pattern6(&a);
+        assert_eq!(r, None);
+
+        let a = ["{","a", "|" ,"B", "}"];
+        let r = is_pattern6(&a).unwrap();
+        assert_eq!(r, ["a", "|", "B"]);
 
         let a = ["a", "B"];
         let r = is_pattern6(&a);
@@ -431,9 +444,13 @@ mod tests {
 
     #[test]
     fn test_is_pattern7() {
-        let a = ["[", "a", "]", "B"];
+        let a = ["[", "a", "]"];
         let b = is_pattern7(&a).unwrap();
         assert_eq!(b, ["a"]);
+
+        let a = ["[", "a", "]", "B"];
+        let r = is_pattern7(&a);
+        assert_eq!(r, None);
 
         let a = ["a", "B"];
         let r = is_pattern7(&a);
@@ -442,9 +459,14 @@ mod tests {
 
     #[test]
     fn test_is_pattern8() {
-        let a = ["(", "a", ")", "B"];
+        let a = ["(", "a", ")"];
         let b = is_pattern8(&a).unwrap();
         assert_eq!(b, ["a"]);
+
+        let a = ["(", "a", ")", "B"];
+        let b = is_pattern8(&a);
+        assert_eq!(b, None);
+
 
         let a = ["a", "B"];
         let r = is_pattern8(&a);
