@@ -11,7 +11,7 @@
 // <D> ::= { "d" } "b"
 use std::{
     collections::{HashMap, HashSet},
-    sync::{LazyLock, Mutex, OnceLock},
+    sync::{LazyLock, Mutex, OnceLock, RwLock},
 };
 
 #[derive(Debug, Clone)]
@@ -28,6 +28,9 @@ struct Rule {
 
 type FirstSets = HashMap<Vec<String>, HashSet<String>>;
 
+// Once_cellで1度だけ書き換え可能な文法規則のベクタ
+static RULES: OnceLock<Vec<Rule>> = OnceLock::new();
+
 static COMPLETED_FIRST_SET: LazyLock<Mutex<FirstSets>> =
     LazyLock::new(|| Mutex::new(FirstSets::new()));
 
@@ -39,7 +42,7 @@ fn main() {
         },
         Rule {
             left: "T".to_string(),
-            right: "{ ( * | / ) } F".to_string(),
+            right: "F { ( * | / ) } F".to_string(),
         },
         Rule {
             left: "F".to_string(),
@@ -53,9 +56,6 @@ fn main() {
     }
     // println!("{:?}", COMPLETED_FIRST_SET.lock().unwrap());
 }
-
-// Once_cellで1度だけ書き換え可能な文法規則のベクタ
-static RULES: OnceLock<Vec<Rule>> = OnceLock::new();
 
 fn calc_first_set(rules: Vec<Rule>) -> HashMap<String, HashSet<String>> {
     // rulesをOnce_cellでグローバル変数に代入する
@@ -329,41 +329,62 @@ fn is_terminal(s: &str) -> bool {
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn test_first() {
-    //     let rules = [
-    //         Rule {
-    //             left: "A".to_string(),
-    //             right: "B".to_string(),
-    //         },
-    //         Rule {
-    //             left: "A".to_string(),
-    //             right: "C".to_string(),
-    //         },
-    //         Rule {
-    //             left: "A".to_string(),
-    //             right: "D".to_string(),
-    //         },
-    //         Rule {
-    //             left: "B".to_string(),
-    //             right: "d".to_string(),
-    //         },
-    //         Rule {
-    //             left: "C".to_string(),
-    //             right: "[ c ] b".to_string(),
-    //         },
-    //         Rule {
-    //             left: "D".to_string(),
-    //             right: "{ d } b".to_string(),
-    //         },
-    //     ];
+    #[test]
+    fn test_first() {
+        let rules = [
+            Rule {
+                left: "E".to_string(),
+                right: "T { ( + | - ) } T".to_string(),
+            },
+            Rule {
+                left: "T".to_string(),
+                right: "{ ( * | / ) } F".to_string(),
+            },
+            Rule {
+                left: "F".to_string(),
+                right: "lp E rp | i | n".to_string(),
+            },
+        ];
+        let first_set = calc_first_set(rules.to_vec());
+        let expected = vec![
+            ("E", vec!["lp", "i", "n", "*", "/"]),
+            ("T", vec!["lp", "i", "n", "*", "/"]),
+            ("F", vec!["lp", "i", "n"]),
+        ];
+        for (k, v) in expected.iter() {
+            assert_eq!(
+                first_set.get(*k).unwrap(),
+                &v.iter().map(|x| x.to_string()).collect()
+            );
+        }
 
-    //     let first_set = calc_first_set(rules.to_vec());
-    //     assert_eq!(first_set.get("A").unwrap(), &["d", "c", "ε"].iter().map(|x| x.to_string()).collect());
-    //     assert_eq!(first_set.get("B").unwrap(), &["d"].iter().map(|x| x.to_string()).collect());
-    //     assert_eq!(first_set.get("C").unwrap(), &["c", "b", "ε"].iter().map(|x| x.to_string()).collect());
-    //     assert_eq!(first_set.get("D").unwrap(), &["d", "b", "ε"].iter().map(|x| x.to_string()).collect());
-    // }
+        let rules = [
+            Rule {
+                left: "E".to_string(),
+                right: "T { ( + | - ) } T".to_string(),
+            },
+            Rule {
+                left: "T".to_string(),
+                right: "F { ( * | / ) } F".to_string(),
+            },
+            Rule {
+                left: "F".to_string(),
+                right: "lp E rp | i | n".to_string(),
+            },
+        ];
+        let first_set = calc_first_set(rules.to_vec());
+        let expected = vec![
+            ("E", vec!["lp", "i", "n"]),
+            ("T", vec!["lp", "i", "n"]),
+            ("F", vec!["lp", "i", "n"]),
+        ];
+        for (k, v) in expected.iter() {
+            assert_eq!(
+                first_set.get(*k).unwrap(),
+                &v.iter().map(|x| x.to_string()).collect()
+            );
+        }
+    }
 
     #[test]
     fn test_is_terminal() {
@@ -433,7 +454,7 @@ mod tests {
         let r = is_pattern6(&a);
         assert_eq!(r, None);
 
-        let a = ["{","a", "|" ,"B", "}"];
+        let a = ["{", "a", "|", "B", "}"];
         let r = is_pattern6(&a).unwrap();
         assert_eq!(r, ["a", "|", "B"]);
 
@@ -466,7 +487,6 @@ mod tests {
         let a = ["(", "a", ")", "B"];
         let b = is_pattern8(&a);
         assert_eq!(b, None);
-
 
         let a = ["a", "B"];
         let r = is_pattern8(&a);
