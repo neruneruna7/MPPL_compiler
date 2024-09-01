@@ -11,7 +11,7 @@
 // <D> ::= { "d" } "b"
 use std::{
     collections::{HashMap, HashSet},
-    sync::{LazyLock, Mutex, OnceLock, RwLock},
+    sync::{LazyLock, Mutex, OnceLock},
 };
 
 #[derive(Debug, Clone)]
@@ -94,12 +94,12 @@ fn first(a: &[&str]) -> HashSet<String> {
             first_a.insert("ε".to_string());
         }
         // 2 aが終端記号1文字なら，FIRST(a)にその終端記号を追加
-        if a.len() == 1 && is_terminal(&a[0]) {
+        if a.len() == 1 && is_terminal(a[0]) {
             first_a.insert(a[0].to_string());
         }
         // 3 aが非終端記号A1文字なら，Aを左辺にもつすべての生成規則についてのFIRST集合を求め，
         // その要素をFIRST(A)に付け加える
-        if a.len() == 1 && !is_terminal(&a[0]) {
+        if a.len() == 1 && !is_terminal(a[0]) {
             let rules = RULES.get().unwrap();
             for r in rules.iter() {
                 if r.left == a[0] {
@@ -280,8 +280,7 @@ fn is_pattern6<'a>(a: &[&'a str]) -> Option<Vec<&'a str>> {
         let buf = a
             .iter()
             .skip(1)
-            .take(a.len() - 2)
-            .map(|x| *x)
+            .take(a.len() - 2).copied()
             .collect::<Vec<&str>>();
         return Some(buf);
     }
@@ -293,8 +292,7 @@ fn is_pattern7<'a>(a: &[&'a str]) -> Option<Vec<&'a str>> {
         let buf = a
             .iter()
             .skip(1)
-            .take(a.len() - 2)
-            .map(|x| *x)
+            .take(a.len() - 2).copied()
             .collect::<Vec<&str>>();
         return Some(buf);
     }
@@ -306,8 +304,7 @@ fn is_pattern8<'a>(a: &[&'a str]) -> Option<Vec<&'a str>> {
         let buf = a
             .iter()
             .skip(1)
-            .take(a.len() - 2)
-            .map(|x| *x)
+            .take(a.len() - 2).copied()
             .collect::<Vec<&str>>();
         return Some(buf);
     }
@@ -346,11 +343,9 @@ mod tests {
             },
         ];
         let first_set = calc_first_set(rules.to_vec());
-        let expected = vec![
-            ("E", vec!["lp", "i", "n", "*", "/"]),
+        let expected = [("E", vec!["lp", "i", "n", "*", "/"]),
             ("T", vec!["lp", "i", "n", "*", "/"]),
-            ("F", vec!["lp", "i", "n"]),
-        ];
+            ("F", vec!["lp", "i", "n"])];
         for (k, v) in expected.iter() {
             assert_eq!(
                 first_set.get(*k).unwrap(),
@@ -373,11 +368,9 @@ mod tests {
             },
         ];
         let first_set = calc_first_set(rules.to_vec());
-        let expected = vec![
-            ("E", vec!["lp", "i", "n"]),
+        let expected = [("E", vec!["lp", "i", "n"]),
             ("T", vec!["lp", "i", "n"]),
-            ("F", vec!["lp", "i", "n"]),
-        ];
+            ("F", vec!["lp", "i", "n"])];
         for (k, v) in expected.iter() {
             assert_eq!(
                 first_set.get(*k).unwrap(),
@@ -388,15 +381,15 @@ mod tests {
 
     #[test]
     fn test_is_terminal() {
-        assert_eq!(is_terminal("a"), true);
-        assert_eq!(is_terminal("A"), false);
-        assert_eq!(is_terminal("abc"), true);
-        assert_eq!(is_terminal("Abc"), false);
-        assert_eq!(is_terminal("["), false);
-        assert_eq!(is_terminal("{"), false);
-        assert_eq!(is_terminal("("), false);
-        assert_eq!(is_terminal("|"), false);
-        assert_eq!(is_terminal("*"), true);
+        assert!(is_terminal("a"));
+        assert!(!is_terminal("A"));
+        assert!(is_terminal("abc"));
+        assert!(!is_terminal("Abc"));
+        assert!(!is_terminal("["));
+        assert!(!is_terminal("{"));
+        assert!(!is_terminal("("));
+        assert!(!is_terminal("|"));
+        assert!(is_terminal("*"));
     }
 
     #[test]
