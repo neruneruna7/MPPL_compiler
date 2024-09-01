@@ -159,11 +159,11 @@ fn main() {
         },
         Rule {
             left: "InpSta".to_string(),
-            right: "'(' read | readln ')' { '(' Var { , Var } ')' }".to_string(),
+            right: "( read | readln ) { '(' Var { , Var } ')' }".to_string(),
         },
         Rule {
             left: "OutSta".to_string(),
-            right: "'(' write | writeln ')' { '(' OutFor { , OutFor } ')' }".to_string(),
+            right: "( write | writeln ) { '(' OutFor { , OutFor } ')' }".to_string(),
         },
         Rule {
             left: "OutFor".to_string(),
