@@ -244,11 +244,9 @@ fn first(a: &[&str]) -> HashSet<String> {
             // 4-2 FIRST(X)がεを含むなら，FIRST(X)からεを取り除いたものとFIRST(b)をFIRST(a)に付け加える
             else {
                 set_x.remove("ε");
-                println!("x: {:?}, b: {:?}, {:?}, first_a:{:?}", x, b, set_x, first_a);
                 first_a.extend(set_x);
                 let set_b = first(&b);
                 first_a.extend(set_b);
-                println!("extended first_a:{:?}", first_a);
             }
         }
         // 5 aが b | y の場合 FIRST(b)とFIRST(y)をFIRST(a)に付け加える
