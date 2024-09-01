@@ -37,16 +37,141 @@ static COMPLETED_FIRST_SET: LazyLock<Mutex<FirstSets>> =
 fn main() {
     let rules = [
         Rule {
-            left: "E".to_string(),
-            right: "T { ( + | - ) } T".to_string(),
+            left: "Program".to_string(),
+            right: "program name ; Block .".to_string(),
         },
         Rule {
-            left: "T".to_string(),
-            right: "F { ( * | / ) } F".to_string(),
+            left: "Block".to_string(),
+            right: "{ VarDec | SubDec } ComSta".to_string(),
         },
         Rule {
-            left: "F".to_string(),
-            right: "lp E rp | i | n".to_string(),
+            left: "VarDec".to_string(),
+            right: "var VarNames : Type ; { VarNames : Type ; } ".to_string(),
+        },
+        Rule {
+            left: "VarNames".to_string(),
+            right: "VarName { , VarName }".to_string(),
+        },
+        Rule {
+            left: "VarName".to_string(),
+            right: "name".to_string(),
+        },
+        Rule {
+            left: "Type".to_string(),
+            right: "StdType | ArrType".to_string(),
+        },
+        Rule {
+            left: "StdType".to_string(),
+            right: "integer | boolean | char".to_string(),
+        },
+        Rule {
+            left: "ArrType".to_string(),
+            right: "array lbc uint rbc of StdType".to_string(),
+        },
+        Rule {
+            left: "SubDec".to_string(),
+            right: "procedure ProcName [ ForPar ] ; [ VarDec ] ComSta".to_string(),
+        },
+        Rule {
+            left: "ProcName".to_string(),
+            right: "name".to_string(),
+        },
+        Rule {
+            left: "ForPar".to_string(),
+            right: "lp VarNames : Type { ; VarNames : Type } rp ".to_string(),
+        },
+        Rule {
+            left: "ComSta".to_string(),
+            right: "begin Sta { ; Sta } end".to_string(),
+        },
+        Rule {
+            left: "Sta".to_string(),
+            right: "AssSta | CndSta | ItrSta | ExtSta | CalSta | RetSta | InpSta | OutSta | ComSta | EmpSta".to_string(),
+        },
+        Rule {
+            left: "CndSta".to_string(),
+            right: "if Exp then Sta [ else Sta ]".to_string(),
+        },
+        Rule {
+            left: "ItrSta".to_string(),
+            right: "while Exp do Sta".to_string(),
+        },
+        Rule {
+            left: "ExtSta".to_string(),
+            right: "break".to_string(),
+        },
+        Rule {
+            left: "CalSta".to_string(),
+            right: "call ProcName [ lp Exps rp ]".to_string(),
+        },
+        Rule {
+            left: "Exps".to_string(),
+            right: "Exp { , Exp }".to_string(),
+        },
+        Rule {
+            left: "RetSta".to_string(),
+            right: "return".to_string(),
+        },
+        Rule
+        {
+            left: "AssSta".to_string(),
+            right: "LeftPart := Exp".to_string(),
+        },
+        Rule {
+            left: "LeftPart".to_string(),
+            right: "Var".to_string(),
+        },
+        Rule {
+            left: "Var".to_string(),
+            right: "name [ lbc Exp rbc ]".to_string(),
+        },
+        Rule {
+            left: "Exp".to_string(),
+            right: "SimpleExp { RelaOpe SimpleExp }".to_string(),
+        },
+        Rule {
+            left: "SimpleExp".to_string(),
+            right: "[ + | - ] Term { AddOpe Term }".to_string(),
+        },
+        Rule {
+            left: "Term".to_string(),
+            right: "Factor { MulOpe Factor }".to_string(),
+        },
+        Rule {
+            left: "Factor".to_string(),
+            right: "Var | Cons | lp Exp rp | not Factor | StdType lp Exp rp".to_string(),
+        },
+        Rule {
+            left: "Cons".to_string(),
+            right: "uint | false | true | string".to_string(),
+        },
+        Rule {
+            left: "MulOpe".to_string(),
+            right: "* | div | and".to_string(),
+        },
+        Rule {
+            left: "AddOpe".to_string(),
+            right: "+ | - | or".to_string(),
+        },
+        Rule {
+            left: "RelaOpe".to_string(),
+            right: "= | <> | < | <= | > | >=".to_string(),
+        },
+        Rule {
+            left: "InpSta".to_string(),
+            right: "lp read | readln rp { lp Var { , Var } rp }".to_string(),
+        },
+        Rule {
+            left: "OutSta".to_string(),
+            right: "lp write | writeln rp { lp OutFor { , OutFor } rp }".to_string(),
+        },
+        Rule {
+            left: "OutFor".to_string(),
+            right: "Exp [ : uint ] | string".to_string(),
+        },
+        Rule {
+            left: "EmpSta".to_string(),
+            right: "ε".to_string(),
         },
     ];
 
