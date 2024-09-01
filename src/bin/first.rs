@@ -20,17 +20,12 @@ struct Rule {
     right: String,
 }
 
-// #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-// struct FirstSet {
-//     left: Vec<String>,
-//     right: HashSet<String>,
-// }
-
 type FirstSets = HashMap<Vec<String>, HashSet<String>>;
 
 // Once_cellで1度だけ書き換え可能な文法規則のベクタ
 static RULES: OnceLock<Vec<Rule>> = OnceLock::new();
 
+// FIRST集合計算結果のキャッシュ
 static COMPLETED_FIRST_SET: LazyLock<Mutex<FirstSets>> =
     LazyLock::new(|| Mutex::new(FirstSets::new()));
 
