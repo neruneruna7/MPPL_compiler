@@ -66,7 +66,7 @@ fn main() {
         },
         Rule {
             left: "ArrType".to_string(),
-            right: "array lbc uint rbc of StdType".to_string(),
+            right: "array '[' uint ']' of StdType".to_string(),
         },
         Rule {
             left: "SubDec".to_string(),
@@ -78,7 +78,7 @@ fn main() {
         },
         Rule {
             left: "ForPar".to_string(),
-            right: "lp VarNames : Type { ; VarNames : Type } rp ".to_string(),
+            right: "'(' VarNames : Type { ; VarNames : Type } ')' ".to_string(),
         },
         Rule {
             left: "ComSta".to_string(),
@@ -102,7 +102,7 @@ fn main() {
         },
         Rule {
             left: "CalSta".to_string(),
-            right: "call ProcName [ lp Exps rp ]".to_string(),
+            right: "call ProcName [ '(' Exps ')' ]".to_string(),
         },
         Rule {
             left: "Exps".to_string(),
@@ -123,7 +123,7 @@ fn main() {
         },
         Rule {
             left: "Var".to_string(),
-            right: "name [ lbc Exp rbc ]".to_string(),
+            right: "name [ '[' Exp ']' ]".to_string(),
         },
         Rule {
             left: "Exp".to_string(),
@@ -139,7 +139,7 @@ fn main() {
         },
         Rule {
             left: "Factor".to_string(),
-            right: "Var | Cons | lp Exp rp | not Factor | StdType lp Exp rp".to_string(),
+            right: "Var | Cons | '(' Exp ')' | not Factor | StdType '(' Exp ')'".to_string(),
         },
         Rule {
             left: "Cons".to_string(),
@@ -159,11 +159,11 @@ fn main() {
         },
         Rule {
             left: "InpSta".to_string(),
-            right: "lp read | readln rp { lp Var { , Var } rp }".to_string(),
+            right: "'(' read | readln ')' { '(' Var { , Var } ')' }".to_string(),
         },
         Rule {
             left: "OutSta".to_string(),
-            right: "lp write | writeln rp { lp OutFor { , OutFor } rp }".to_string(),
+            right: "'(' write | writeln ')' { '(' OutFor { , OutFor } ')' }".to_string(),
         },
         Rule {
             left: "OutFor".to_string(),
