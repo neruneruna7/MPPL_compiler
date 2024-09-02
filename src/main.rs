@@ -1,4 +1,4 @@
-use parser::parser1_ll1::Parser;
+use parser::parser3_ll1::Parser;
 use prac_compiler::scan::scan3;
 
 pub mod parser;
