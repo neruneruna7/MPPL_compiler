@@ -1,4 +1,4 @@
-use crate::scan3::{self, Kind, Lexer, Token};
+use crate::scan::scan3::{self, Kind, Lexer, Token};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[allow(dead_code)]

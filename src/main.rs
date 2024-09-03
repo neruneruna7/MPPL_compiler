@@ -1,7 +1,5 @@
-use parser::parser3_ll1::Parser;
+use prac_compiler::parser::parser3_ll1::Parser;
 use prac_compiler::scan::scan3;
-
-pub mod parser;
 
 const TEST_SOURCE_COUNT: usize = 1;
 

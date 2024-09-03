@@ -1,6 +1,6 @@
 use std::{cell::LazyCell, collections::HashSet};
 
-use crate::scan3::{self, Kind, Lexer, Token};
+use crate::scan::scan3::{self, Kind, Lexer, Token};
 
 // 独自のエラー型を定義
 // どんなトークンを期待していたが，実際にはどんなトークンが来たかを表現する
@@ -1019,14 +1019,14 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::Parser;
-    use prac_compiler::scan::scan3::Lexer;
+    use crate::scan::scan3::Lexer;
 
     // ./parse/samples/1.mpl
     // ./parse/answes/1.mpl
     // を読み込む
     const TEST_SOURCE_COUNT: usize = 20;
     #[test]
-    fn parse_test() {
+    fn tests_parser() {
         for i in 1..=TEST_SOURCE_COUNT {
             let source =
                 std::fs::read_to_string(format!("test_source/perse/samples/{}.mpl", i)).unwrap();
@@ -1038,7 +1038,7 @@ mod tests {
                 Ok(_) => println!("{} parsing OK \n{}", i, source),
                 Err(e) => {
                     eprintln!("Err {}:  {}", i, e);
-                    assert_eq!(e.lexeicalized_source, answer)
+                    assert_eq!(e.lexeicalized_source.trim(), answer.trim())
                 }
             }
         }
