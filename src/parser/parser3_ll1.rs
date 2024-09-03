@@ -188,6 +188,9 @@ const FIRST_SETS: LazyCell<Vec<FirstSet>> = {
                     Kind::Write,
                     Kind::Writeln,
                     Kind::Begin,
+                    Kind::Semicolon,
+                    Kind::End,
+                    Kind::Else,
                 ]
                 .into_iter()
                 .collect(),
