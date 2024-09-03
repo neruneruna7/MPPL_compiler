@@ -168,7 +168,7 @@ impl<'a> Lexer<'a> {
             // EBNFのprogramに該当
             match c {
                 // 分離子
-                ' ' | '\t' | '\n' | '{' | '/' => {
+                ' ' | '\t' | '\n' | '\r' | '{' | '/' => {
                     let c = self.chars.next().unwrap();
                     self.comment(c);
                 }
