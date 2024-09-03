@@ -1038,7 +1038,14 @@ mod tests {
                 Ok(_) => println!("{} parsing OK \n{}", i, source),
                 Err(e) => {
                     eprintln!("Err {}:  {}", i, e);
-                    assert_eq!(e.lexeicalized_source.trim(), answer.trim())
+                    // assert_eq!(e.lexeicalized_source.trim(), answer.trim())
+                    // ソースコードと正解例をトークン化し，トークン化した結果を比較する
+                    // トークンの位置情報はいらないので，取り除いたものを比較する
+                    let mut lex = Lexer::new(&e.lexeicalized_source);
+                    let lexeicalized_err_source = lex.analyze().iter().map(|t| (t.kind, t.value.clone())).collect::<Vec<_>>();
+                    let mut lex = Lexer::new(&answer);
+                    let lexeicalized_answer = lex.analyze().iter().map(|t| (t.kind, t.value.clone())).collect::<Vec<_>>();
+                    assert_eq!(lexeicalized_err_source, lexeicalized_answer);
                 }
             }
         }
