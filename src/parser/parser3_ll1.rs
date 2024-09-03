@@ -1,7 +1,4 @@
-use std::{
-    cell::LazyCell,
-    collections::HashSet,
-};
+use std::{cell::LazyCell, collections::HashSet};
 
 use crate::scan3::{self, Kind, Lexer, Token};
 
@@ -389,10 +386,14 @@ impl<'a> Parser<'a> {
             self.cur_token = kind;
             self.lookahead = Some(self.lexer.read_next_token());
             println!("consume token: {:?}, lookahead: {:?}", kind, self.lookahead);
-            return Ok(());
+            Ok(())
+        } else {
+            println!(
+                "consume token error: {:?}, lookahead: {:?}",
+                kind, self.lookahead
+            );
+            Err(SyntaxError::new(self, &[kind], &[]))
         }
-
-        Err(SyntaxError::new(self, &[kind], &[]))
     }
 
     fn match_syntax_first_token(&self, syntax: SyntaxKind) -> bool {
@@ -443,8 +444,10 @@ impl<'a> Parser<'a> {
                 SyntaxKind::OutputStatement => self.output_statement()?,
                 SyntaxKind::OutputFormat => self.output_format()?,
             }
+            Ok(())
+        } else {
+            Err(SyntaxError::new(self, &[], &[syntax]))
         }
-        Err(SyntaxError::new(self, &[], &[syntax]))
     }
 
     /// パースの開始
@@ -499,7 +502,10 @@ impl<'a> Parser<'a> {
 
     /// 変数名 { "," 変数名 }
     fn variable_names(&mut self) -> SyntaxResult {
+        println!("variable name before: {:?}", self.lookahead);
         self.match_consume_syntax(SyntaxKind::VariableName)?;
+        println!("variable name after: {:?}", self.lookahead);
+
         while let Some(ref l) = self.lookahead {
             if l.kind == Kind::Comma {
                 self.match_consume_token(Kind::Comma)?;
@@ -508,7 +514,6 @@ impl<'a> Parser<'a> {
                 break;
             }
         }
-
         Ok(())
     }
 
@@ -1010,5 +1015,34 @@ impl<'a> Parser<'a> {
             None => Err(err)?,
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Parser;
+    use prac_compiler::scan::scan3::Lexer;
+
+    // ./parse/samples/1.mpl
+    // ./parse/answes/1.mpl
+    // を読み込む
+    const TEST_SOURCE_COUNT: usize = 20;
+    #[test]
+    fn parse_test() {
+        for i in 1..=TEST_SOURCE_COUNT {
+            let source =
+                std::fs::read_to_string(format!("test_source/perse/samples/{}.mpl", i)).unwrap();
+            let answer =
+                std::fs::read_to_string(format!("test_source/perse/answers/{}.mpl", i)).unwrap();
+            let lexer = Lexer::new(&source);
+            let mut parser = Parser::new(lexer);
+            match parser.parse_program() {
+                Ok(_) => println!("{} parsing OK \n{}", i, source),
+                Err(e) => {
+                    eprintln!("Err {}:  {}", i, e);
+                    assert_eq!(e.lexeicalized_source, answer)
+                }
+            }
+        }
     }
 }
