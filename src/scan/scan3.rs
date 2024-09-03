@@ -359,14 +359,20 @@ impl<'a> Lexer<'a> {
         let mut buf = String::from(c);
 
         while let Some(c) = self.chars.peek() {
+            // 1文字目の段階で確定する記号があるので，その場合break
+            if SYMBOLS_LEN_1.contains(&buf.as_str()) {
+                break;
+            }
             let cc = String::from(*c);
             if match_symbol(&cc) == Kind::Unknown {
                 break;
             }
-            // 1文字目の段階で確定する記号があるので，その場合break
-            if SYMBOLS_LEN_1.contains(cc.as_str()) {
-                break;
-            }
+            // // 1文字目の段階で確定する記号があるので，その場合break
+            // ここにこの処理を置いていたとき，なぜかレキサーのテストケースは通過する
+            // パーサーのテストでは，:=を: と字句解析して異常を起こしたのに なぜ差があるのか不明
+            // if SYMBOLS_LEN_1.contains(&buf.as_str()) {
+            //     break;
+            // }
             buf.push(self.chars.next().unwrap());
         }
 
