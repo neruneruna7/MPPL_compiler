@@ -502,9 +502,7 @@ impl<'a> Parser<'a> {
 
     /// 変数名 { "," 変数名 }
     fn variable_names(&mut self) -> SyntaxResult {
-        println!("variable name before: {:?}", self.lookahead);
         self.match_consume_syntax(SyntaxKind::VariableName)?;
-        println!("variable name after: {:?}", self.lookahead);
 
         while let Some(ref l) = self.lookahead {
             if l.kind == Kind::Comma {
