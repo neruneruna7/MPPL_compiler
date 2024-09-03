@@ -1,8 +1,6 @@
 use std::{
-    cell::{LazyCell, OnceCell},
+    cell::LazyCell,
     collections::HashSet,
-    f32::consts::E,
-    sync::OnceLock,
 };
 
 use crate::scan3::{self, Kind, Lexer, Token};
@@ -58,8 +56,7 @@ impl std::fmt::Display for SyntaxError {
         let tokens = binding
             .iter()
             .filter(|x| self.expected_syntax.contains(&x.symbol))
-            .map(|x| x.first_set.iter().collect::<Vec<&Kind>>())
-            .flatten()
+            .flat_map(|x| x.first_set.iter().collect::<Vec<&Kind>>())
             .collect::<Vec<&Kind>>();
 
         write!(
@@ -395,7 +392,7 @@ impl<'a> Parser<'a> {
             return Ok(());
         }
 
-        Err(SyntaxError::new(&self, &[kind], &[]))
+        Err(SyntaxError::new(self, &[kind], &[]))
     }
 
     fn match_syntax_first_token(&self, syntax: SyntaxKind) -> bool {
@@ -447,7 +444,7 @@ impl<'a> Parser<'a> {
                 SyntaxKind::OutputFormat => self.output_format()?,
             }
         }
-        Err(SyntaxError::new(&self, &[], &[syntax]))
+        Err(SyntaxError::new(self, &[], &[syntax]))
     }
 
     /// パースの開始
@@ -525,7 +522,7 @@ impl<'a> Parser<'a> {
     /// 予約語に引っかかるのを防ぐため，アンダーバーをつけている
     fn type_(&mut self) -> SyntaxResult {
         let err = SyntaxError::new(
-            &self,
+            self,
             &[],
             &[SyntaxKind::StandardType, SyntaxKind::ArrayType],
         );
@@ -544,7 +541,7 @@ impl<'a> Parser<'a> {
 
     /// "integer" | "boolean" | "char"
     fn standard_type(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(&self, &[], &[SyntaxKind::StandardType]);
+        let err = SyntaxError::new(self, &[], &[SyntaxKind::StandardType]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Integer => self.match_consume_token(Kind::Integer)?,
@@ -813,7 +810,7 @@ impl<'a> Parser<'a> {
     /// 変数 | 定数 | "(" 式 ")" | "not" 因子 | 標準型 "(" 式 ")"
     fn factor(&mut self) -> SyntaxResult {
         let err = SyntaxError::new(
-            &self,
+            self,
             &[Kind::LParen, Kind::Not],
             &[
                 SyntaxKind::Variable,
@@ -855,7 +852,7 @@ impl<'a> Parser<'a> {
     /// "符号なし整数" | "true" | "false" | "文字列"
     fn constant(&mut self) -> SyntaxResult {
         let err = SyntaxError::new(
-            &self,
+            self,
             &[Kind::UnsignedInteger, Kind::True, Kind::False, Kind::String],
             &[],
         );
@@ -874,7 +871,7 @@ impl<'a> Parser<'a> {
 
     /// "*" | "div" | "and"
     fn multiplicative_operator(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(&self, &[Kind::Star, Kind::Div, Kind::And], &[]);
+        let err = SyntaxError::new(self, &[Kind::Star, Kind::Div, Kind::And], &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Star => self.match_consume_token(Kind::Star)?,
@@ -889,7 +886,7 @@ impl<'a> Parser<'a> {
 
     /// "+" | "-" | "or"
     fn additive_operator(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(&self, &[Kind::Plus, Kind::Minus, Kind::Or], &[]);
+        let err = SyntaxError::new(self, &[Kind::Plus, Kind::Minus, Kind::Or], &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Plus => self.match_consume_token(Kind::Plus)?,
@@ -905,7 +902,7 @@ impl<'a> Parser<'a> {
     /// "=" | "<>" | "<" | "<=" | ">" | ">="
     fn relational_operator(&mut self) -> SyntaxResult {
         let err = SyntaxError::new(
-            &self,
+            self,
             &[
                 Kind::Equal,
                 Kind::NotEq,
@@ -933,7 +930,7 @@ impl<'a> Parser<'a> {
 
     /// ( "read" | "readln" ) [ "(" 変数 { "," 変数 } ")" ]
     fn input_statement(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(&self, &[Kind::Read, Kind::Readln], &[]);
+        let err = SyntaxError::new(self, &[Kind::Read, Kind::Readln], &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Read => self.match_consume_token(Kind::Read)?,
@@ -963,7 +960,7 @@ impl<'a> Parser<'a> {
 
     /// ( "write" | "writeln" ) [ "(" 出力指定 { "," 出力指定 } ")" ]
     fn output_statement(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(&self, &[Kind::Write, Kind::Writeln], &[]);
+        let err = SyntaxError::new(self, &[Kind::Write, Kind::Writeln], &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Write => self.match_consume_token(Kind::Write)?,
@@ -993,7 +990,7 @@ impl<'a> Parser<'a> {
 
     /// 式 [ ":" "符号なし整数" ] | "文字列"
     fn output_format(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(&self, &[Kind::String], &[SyntaxKind::Expression]);
+        let err = SyntaxError::new(self, &[Kind::String], &[SyntaxKind::Expression]);
 
         match self.lookahead {
             Some(ref l) => match l.kind {
