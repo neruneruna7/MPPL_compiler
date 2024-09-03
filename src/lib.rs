@@ -1,2 +1,2 @@
-pub mod scan;
 pub mod parser;
+pub mod scan;

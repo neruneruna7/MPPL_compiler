@@ -379,7 +379,7 @@ impl<'a> Lexer<'a> {
         let kind = match_symbol(&buf);
         if kind != Kind::Unknown {
             (kind, TokenValue::None)
-        }else{
+        } else {
             (kind, TokenValue::String(buf))
         }
     }
