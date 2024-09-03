@@ -450,19 +450,6 @@ impl<'a> Parser<'a> {
         Err(SyntaxError::new(&self, &[], &[syntax]))
     }
 
-    fn syntax_error(&self, expected_token: &[scan3::Kind], expected_syntax: &[SyntaxKind]) {
-        let sliced_source = if let Some(ref l) = self.lookahead {
-            &self.lexer.source[..l.start]
-        } else {
-            self.lexer.source
-        };
-
-        panic!(
-            "syntax error source code:\n\n {} \n\n expect token= {:?}, expect syntax= {:?} but found {:?}",
-            sliced_source, expected_token, expected_syntax, &self.lookahead
-        );
-    }
-
     /// パースの開始
     /// "program" "名前" ";" ブロック "."
     pub fn parse_program(&mut self) -> SyntaxResult {
@@ -691,8 +678,8 @@ impl<'a> Parser<'a> {
 
         while let Some(ref l) = self.lookahead {
             if l.kind == Kind::Else {
-                self.match_consume_token(Kind::Else);
-                self.match_consume_syntax(SyntaxKind::Statement);
+                self.match_consume_token(Kind::Else)?;
+                self.match_consume_syntax(SyntaxKind::Statement)?;
             } else {
                 break;
             }
