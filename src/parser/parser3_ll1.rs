@@ -353,7 +353,7 @@ const FIRST_SETS: LazyCell<Vec<FirstSet>> = {
             ),
             FirstSet::new(
                 SyntaxKind::OutputFormat,
-                vec![Kind::Plus, Kind::Minus, Kind::String, Kind::UnsignedInteger]
+                vec![Kind::True, Kind::Not, Kind::Plus, Kind::Boolean, Kind::Minus, Kind::False, Kind::LParen, Kind::Char, Kind::UnsignedInteger, Kind::String, Kind::Name, Kind::Integer]
                     .into_iter()
                     .collect(),
             ),
