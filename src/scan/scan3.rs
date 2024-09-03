@@ -1,4 +1,4 @@
-use std::{iter::Peekable, str::Chars};
+use std::{collections::HashSet, iter::Peekable, str::Chars, sync::LazyLock};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Token {
@@ -72,6 +72,14 @@ pub enum Kind {
     // どれでもない
     Unknown,
 }
+
+// 記号のトークンについて1文字のみの記号か，2文字以上の可能性がある記号かを保持する
+// つまり，最初の文字を読んだ段階で確定できるものを集めた配列
+static SYMBOLS_LEN_1: LazyLock<HashSet<&str>> = LazyLock::new(|| {
+    vec!["+", "-", "*", "=", "(", ")", "[", "]", ".", ",", ";"]
+        .into_iter()
+        .collect::<HashSet<&str>>()
+});
 
 fn match_keyword(ident: &str) -> Kind {
     if ident.len() == 1 || ident.len() > 10 {
@@ -353,6 +361,10 @@ impl<'a> Lexer<'a> {
         while let Some(c) = self.chars.peek() {
             let cc = String::from(*c);
             if match_symbol(&cc) == Kind::Unknown {
+                break;
+            }
+            // 1文字目の段階で確定する記号があるので，その場合break
+            if SYMBOLS_LEN_1.contains(cc.as_str()) {
                 break;
             }
             buf.push(self.chars.next().unwrap());
