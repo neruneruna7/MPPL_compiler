@@ -70,5 +70,3 @@ impl std::fmt::Display for SyntaxError {
 }
 
 impl std::error::Error for SyntaxError {}
-
-pub(crate) type SyntaxResult = std::result::Result<(), SyntaxError>;
