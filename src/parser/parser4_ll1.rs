@@ -188,18 +188,14 @@ impl<'a> Parser<'a> {
             self.match_consume_syntax(SyntaxKind::Type)?,
             self.match_consume_token(Kind::Semicolon)?,
         ];
-        while let Some(ref l) = self.lookahead {
-            if l.kind == Kind::Name {
-                let n = vec![
-                    self.match_consume_syntax(SyntaxKind::VariableNames)?,
-                    self.match_consume_token(Kind::Colon)?,
-                    self.match_consume_syntax(SyntaxKind::Type)?,
-                    self.match_consume_token(Kind::Semicolon)?,
-                ];
-                nodes.extend(n);
-            } else {
-                break;
-            }
+        while matches!(self.lookahead, Some(ref l) if l.kind == Kind::Name) {
+            let n = vec![
+                self.match_consume_syntax(SyntaxKind::VariableNames)?,
+                self.match_consume_token(Kind::Colon)?,
+                self.match_consume_syntax(SyntaxKind::Type)?,
+                self.match_consume_token(Kind::Semicolon)?,
+            ];
+            nodes.extend(n);
         }
 
         Ok(Node::new(
@@ -212,13 +208,9 @@ impl<'a> Parser<'a> {
     fn variable_names(&mut self) -> SyntaxResult {
         let mut nodes = vec![self.match_consume_syntax(SyntaxKind::VariableName)?];
 
-        while let Some(ref l) = self.lookahead {
-            if l.kind == Kind::Comma {
-                nodes.push(self.match_consume_token(Kind::Comma)?);
-                nodes.push(self.match_consume_syntax(SyntaxKind::VariableName)?);
-            } else {
-                break;
-            }
+        while matches!(self.lookahead,Some(ref l) if l.kind == Kind::Comma) {
+            nodes.push(self.match_consume_token(Kind::Comma)?);
+            nodes.push(self.match_consume_syntax(SyntaxKind::VariableName)?);
         }
         Ok(Node::new(
             NodeKind::Syntax(SyntaxKind::VariableNames),
@@ -299,16 +291,14 @@ impl<'a> Parser<'a> {
             self.match_consume_token(Kind::Procedure)?,
             self.match_consume_syntax(SyntaxKind::ProcedureName)?,
         ];
-        if let Some(ref l) = self.lookahead {
-            if self.match_syntax_first_token(SyntaxKind::FormalParameters) {
-                nodes.push(self.match_consume_syntax(SyntaxKind::FormalParameters)?);
-            }
+        if self.lookahead.is_some() && self.match_syntax_first_token(SyntaxKind::FormalParameters) {
+            nodes.push(self.match_consume_syntax(SyntaxKind::FormalParameters)?);
         }
         nodes.push(self.match_consume_token(Kind::Semicolon)?);
-        if let Some(ref l) = self.lookahead {
-            if self.match_syntax_first_token(SyntaxKind::VariableDeclaration) {
-                nodes.push(self.match_consume_syntax(SyntaxKind::VariableDeclaration)?);
-            }
+        if self.lookahead.is_some()
+            && self.match_syntax_first_token(SyntaxKind::VariableDeclaration)
+        {
+            nodes.push(self.match_consume_syntax(SyntaxKind::VariableDeclaration)?);
         }
         nodes.push(self.match_consume_syntax(SyntaxKind::CompoundStatement)?);
         nodes.push(self.match_consume_token(Kind::Semicolon)?);
@@ -336,18 +326,14 @@ impl<'a> Parser<'a> {
             self.match_consume_token(Kind::Colon)?,
             self.match_consume_syntax(SyntaxKind::Type)?,
         ];
-        while let Some(ref l) = self.lookahead {
-            if l.kind == Kind::Semicolon {
-                let n = vec![
-                    self.match_consume_token(Kind::Semicolon)?,
-                    self.match_consume_syntax(SyntaxKind::VariableNames)?,
-                    self.match_consume_token(Kind::Colon)?,
-                    self.match_consume_syntax(SyntaxKind::Type)?,
-                ];
-                nodes.extend(n);
-            } else {
-                break;
-            }
+        while matches!(self.lookahead, Some(ref l) if l.kind == Kind::Semicolon) {
+            let n = vec![
+                self.match_consume_token(Kind::Semicolon)?,
+                self.match_consume_syntax(SyntaxKind::VariableNames)?,
+                self.match_consume_token(Kind::Colon)?,
+                self.match_consume_syntax(SyntaxKind::Type)?,
+            ];
+            nodes.extend(n);
         }
         nodes.push(self.match_consume_token(Kind::RParen)?);
 
@@ -363,16 +349,12 @@ impl<'a> Parser<'a> {
             self.match_consume_token(Kind::Begin)?,
             self.match_consume_syntax(SyntaxKind::Statement)?,
         ];
-        while let Some(ref l) = self.lookahead {
-            if l.kind == Kind::Semicolon {
-                let n = vec![
-                    self.match_consume_token(Kind::Semicolon)?,
-                    self.match_consume_syntax(SyntaxKind::Statement)?,
-                ];
-                nodes.extend(n);
-            } else {
-                break;
-            }
+        while matches!(self.lookahead,Some(ref l) if l.kind == Kind::Semicolon) {
+            let n = vec![
+                self.match_consume_token(Kind::Semicolon)?,
+                self.match_consume_syntax(SyntaxKind::Statement)?,
+            ];
+            nodes.extend(n);
         }
         nodes.push(self.match_consume_token(Kind::End)?);
 
@@ -435,16 +417,12 @@ impl<'a> Parser<'a> {
             self.match_consume_token(Kind::Then)?,
             self.match_consume_syntax(SyntaxKind::Statement)?,
         ];
-        while let Some(ref l) = self.lookahead {
-            if l.kind == Kind::Else {
-                let n = vec![
-                    self.match_consume_token(Kind::Else)?,
-                    self.match_consume_syntax(SyntaxKind::Statement)?,
-                ];
-                nodes.extend(n);
-            } else {
-                break;
-            }
+        while matches!(self.lookahead,Some(ref l) if l.kind == Kind::Else) {
+            let n = vec![
+                self.match_consume_token(Kind::Else)?,
+                self.match_consume_syntax(SyntaxKind::Statement)?,
+            ];
+            nodes.extend(n);
         }
 
         Ok(Node::new(
@@ -484,15 +462,13 @@ impl<'a> Parser<'a> {
             self.match_consume_token(Kind::Call)?,
             self.match_consume_syntax(SyntaxKind::ProcedureName)?,
         ];
-        if let Some(ref l) = self.lookahead {
-            if l.kind == Kind::LParen {
-                let n = vec![
-                    self.match_consume_token(Kind::LParen)?,
-                    self.match_consume_syntax(SyntaxKind::Expressions)?,
-                    self.match_consume_token(Kind::RParen)?,
-                ];
-                nodes.extend(n);
-            }
+        if matches!(self.lookahead,Some(ref l) if l.kind == Kind::LParen) {
+            let n = vec![
+                self.match_consume_token(Kind::LParen)?,
+                self.match_consume_syntax(SyntaxKind::Expressions)?,
+                self.match_consume_token(Kind::RParen)?,
+            ];
+            nodes.extend(n);
         }
 
         Ok(Node::new(
@@ -504,16 +480,12 @@ impl<'a> Parser<'a> {
     /// 式 { "," 式 }
     fn expressions(&mut self) -> SyntaxResult {
         let mut nodes = vec![self.match_consume_syntax(SyntaxKind::Expression)?];
-        while let Some(ref l) = self.lookahead {
-            if l.kind == Kind::Comma {
-                let n = vec![
-                    self.match_consume_token(Kind::Comma)?,
-                    self.match_consume_syntax(SyntaxKind::Expression)?,
-                ];
-                nodes.extend(n);
-            } else {
-                break;
-            }
+        while matches!(self.lookahead,Some(ref l) if l.kind == Kind::Comma) {
+            let n = vec![
+                self.match_consume_token(Kind::Comma)?,
+                self.match_consume_syntax(SyntaxKind::Expression)?,
+            ];
+            nodes.extend(n);
         }
 
         Ok(Node::new(
@@ -558,15 +530,13 @@ impl<'a> Parser<'a> {
     /// 変数名 [ "[" 式 "]" ]
     fn variable(&mut self) -> SyntaxResult {
         let mut nodes = vec![self.match_consume_syntax(SyntaxKind::VariableName)?];
-        if let Some(ref l) = self.lookahead {
-            if l.kind == Kind::LBracket {
-                let n = vec![
-                    self.match_consume_token(Kind::LBracket)?,
-                    self.match_consume_syntax(SyntaxKind::Expression)?,
-                    self.match_consume_token(Kind::RBracket)?,
-                ];
-                nodes.extend(n);
-            }
+        if matches!(self.lookahead, Some(ref l) if l.kind == Kind::LBracket) {
+            let n = vec![
+                self.match_consume_token(Kind::LBracket)?,
+                self.match_consume_syntax(SyntaxKind::Expression)?,
+                self.match_consume_token(Kind::RBracket)?,
+            ];
+            nodes.extend(n);
         }
 
         Ok(Node::new(
@@ -578,14 +548,13 @@ impl<'a> Parser<'a> {
     /// 単純式 { 関係演算子 単純式 }
     fn expression(&mut self) -> SyntaxResult {
         let mut nodes = vec![self.match_consume_syntax(SyntaxKind::SimpleExpression)?];
-        if let Some(ref l) = self.lookahead {
-            if self.match_syntax_first_token(SyntaxKind::RelationalOperator) {
-                let n = vec![
-                    self.match_consume_syntax(SyntaxKind::RelationalOperator)?,
-                    self.match_consume_syntax(SyntaxKind::SimpleExpression)?,
-                ];
-                nodes.extend(n);
-            }
+        if self.lookahead.is_some() && self.match_syntax_first_token(SyntaxKind::RelationalOperator)
+        {
+            let n = vec![
+                self.match_consume_syntax(SyntaxKind::RelationalOperator)?,
+                self.match_consume_syntax(SyntaxKind::SimpleExpression)?,
+            ];
+            nodes.extend(n);
         }
 
         Ok(Node::new(
@@ -605,16 +574,14 @@ impl<'a> Parser<'a> {
             }
         }
         nodes.push(self.match_consume_syntax(SyntaxKind::Term)?);
-        while let Some(ref l) = self.lookahead {
-            if self.match_syntax_first_token(SyntaxKind::AdditiveOperator) {
-                let n = vec![
-                    self.match_consume_syntax(SyntaxKind::AdditiveOperator)?,
-                    self.match_consume_syntax(SyntaxKind::Term)?,
-                ];
-                nodes.extend(n);
-            } else {
-                break;
-            }
+        while self.lookahead.is_some()
+            && self.match_syntax_first_token(SyntaxKind::AdditiveOperator)
+        {
+            let n = vec![
+                self.match_consume_syntax(SyntaxKind::AdditiveOperator)?,
+                self.match_consume_syntax(SyntaxKind::Term)?,
+            ];
+            nodes.extend(n);
         }
 
         Ok(Node::new(
@@ -626,16 +593,14 @@ impl<'a> Parser<'a> {
     /// 因子 { 乗法演算子 因子 }
     fn term(&mut self) -> SyntaxResult {
         let mut nodes = vec![self.match_consume_syntax(SyntaxKind::Factor)?];
-        while let Some(ref l) = self.lookahead {
-            if self.match_syntax_first_token(SyntaxKind::MultiplicativeOperator) {
-                let n = vec![
-                    self.match_consume_syntax(SyntaxKind::MultiplicativeOperator)?,
-                    self.match_consume_syntax(SyntaxKind::Factor)?,
-                ];
-                nodes.extend(n);
-            } else {
-                break;
-            }
+        while self.lookahead.is_some()
+            && self.match_syntax_first_token(SyntaxKind::MultiplicativeOperator)
+        {
+            let n = vec![
+                self.match_consume_syntax(SyntaxKind::MultiplicativeOperator)?,
+                self.match_consume_syntax(SyntaxKind::Factor)?,
+            ];
+            nodes.extend(n);
         }
 
         Ok(Node::new(NodeKind::Syntax(SyntaxKind::Term), Some(nodes)))
@@ -842,26 +807,20 @@ impl<'a> Parser<'a> {
         };
         nodes.push(n);
 
-        if let Some(ref l) = self.lookahead {
-            if l.kind == Kind::LParen {
-                let mut n = vec![
-                    self.match_consume_token(Kind::LParen)?,
+        if matches!(self.lookahead,Some(ref l) if l.kind == Kind::LParen) {
+            let mut n = vec![
+                self.match_consume_token(Kind::LParen)?,
+                self.match_consume_syntax(SyntaxKind::OutputFormat)?,
+            ];
+            while matches!(self.lookahead,Some(ref l) if l.kind == Kind::Comma) {
+                let n2 = vec![
+                    self.match_consume_token(Kind::Comma)?,
                     self.match_consume_syntax(SyntaxKind::OutputFormat)?,
                 ];
-                while let Some(ref l) = self.lookahead {
-                    if l.kind == Kind::Comma {
-                        let n2 = vec![
-                            self.match_consume_token(Kind::Comma)?,
-                            self.match_consume_syntax(SyntaxKind::OutputFormat)?,
-                        ];
-                        n.extend(n2);
-                    } else {
-                        break;
-                    }
-                }
-                n.push(self.match_consume_token(Kind::RParen)?);
-                nodes.extend(n);
+                n.extend(n2);
             }
+            n.push(self.match_consume_token(Kind::RParen)?);
+            nodes.extend(n);
         }
 
         Ok(Node::new(

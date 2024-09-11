@@ -2,7 +2,7 @@ use prac_compiler::scan::scan3;
 
 fn main() {
     println!("Hello, world!");
-    let source = "
+    let _source = "
     if + {comment} if /* comment */
     a + b
     1+1
