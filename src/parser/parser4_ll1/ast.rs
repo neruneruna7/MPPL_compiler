@@ -2,9 +2,10 @@ use super::SyntaxKind;
 
 use crate::scan::scan3::Kind;
 
-pub(crate) struct Node {
-    pub(crate) kind: NodeKind,
-    pub(crate) children: Option<Vec<Node>>,
+#[derive(Debug, Clone)]
+pub struct Node {
+    pub kind: NodeKind,
+    pub children: Option<Vec<Node>>,
 }
 
 impl Node {
@@ -13,7 +14,8 @@ impl Node {
     }
 }
 
-pub(crate) enum NodeKind {
+#[derive(Debug, Clone)]
+pub enum NodeKind {
     Token(Kind),
     Syntax(SyntaxKind),
 }

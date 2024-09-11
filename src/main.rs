@@ -1,4 +1,4 @@
-use prac_compiler::parser::parser3_ll1::Parser;
+use prac_compiler::parser::parser4_ll1::Parser;
 use prac_compiler::scan::scan3;
 
 const TEST_SOURCE_COUNT: usize = 1;
@@ -9,7 +9,10 @@ fn main() {
         let lexer = scan3::Lexer::new(&source);
         let mut parser = Parser::new(lexer);
         match parser.parse_program() {
-            Ok(_) => println!("{} parsing OK \n{}", i, source),
+            Ok(n) => {
+                println!("{} parsing OK \n{}", i, source);
+                println!("{:#?}", n);
+            }
             Err(e) => {
                 eprintln!("Err:  {}", e);
             }

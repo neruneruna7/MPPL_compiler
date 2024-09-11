@@ -92,6 +92,10 @@ impl<'a> Parser<'a> {
         } else {
             return false;
         };
+        if syntax == SyntaxKind::EmptyStatement {
+            // 空文の場合，何が来てもtrue
+            return true;
+        }
         let binding = first_set::FIRST_SETS;
         let tokens = binding.iter().find(|x| x.symbol == syntax).unwrap();
         tokens.first_set.contains(&lk)
