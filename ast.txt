@@ -1,0 +1,372 @@
+consume token: Program, lookahead: Some(Token { kind: Name, start: 8, end: 21, value: String("assigninteger") })
+consume token: Name, lookahead: Some(Token { kind: Semicolon, start: 21, end: 22, value: None })
+consume token: Semicolon, lookahead: Some(Token { kind: Var, start: 34, end: 37, value: None })
+consume token: Var, lookahead: Some(Token { kind: Name, start: 38, end: 39, value: String("n") })
+consume token: Name, lookahead: Some(Token { kind: Colon, start: 39, end: 40, value: None })
+consume token: Colon, lookahead: Some(Token { kind: Integer, start: 41, end: 48, value: None })
+consume token: Integer, lookahead: Some(Token { kind: Semicolon, start: 48, end: 49, value: None })
+consume token: Semicolon, lookahead: Some(Token { kind: Begin, start: 50, end: 55, value: None })
+consume token: Begin, lookahead: Some(Token { kind: Name, start: 57, end: 58, value: String("n") })
+consume token: Name, lookahead: Some(Token { kind: Assign, start: 59, end: 61, value: None })
+consume token: Assign, lookahead: Some(Token { kind: UnsignedInteger, start: 62, end: 63, value: Integer(1) })
+consume token: UnsignedInteger, lookahead: Some(Token { kind: End, start: 64, end: 67, value: None })
+consume token: End, lookahead: Some(Token { kind: Dot, start: 67, end: 68, value: None })
+consume token: Dot, lookahead: Some(Token { kind: Eof, start: 68, end: 68, value: None })
+1 parsing OK 
+program assigninteger;	{sample21}
+var n: integer;
+begin
+ n := 1
+end.
+Node {
+    kind: Syntax(
+        Program,
+    ),
+    children: Some(
+        [
+            Node {
+                kind: Token(
+                    Some(
+                        Token {
+                            kind: Program,
+                            start: 0,
+                            end: 7,
+                            value: None,
+                        },
+                    ),
+                ),
+                children: None,
+            },
+            Node {
+                kind: Token(
+                    Some(
+                        Token {
+                            kind: Name,
+                            start: 8,
+                            end: 21,
+                            value: String(
+                                "assigninteger",
+                            ),
+                        },
+                    ),
+                ),
+                children: None,
+            },
+            Node {
+                kind: Token(
+                    Some(
+                        Token {
+                            kind: Semicolon,
+                            start: 21,
+                            end: 22,
+                            value: None,
+                        },
+                    ),
+                ),
+                children: None,
+            },
+            Node {
+                kind: Syntax(
+                    Block,
+                ),
+                children: Some(
+                    [
+                        Node {
+                            kind: Syntax(
+                                VariableDeclaration,
+                            ),
+                            children: Some(
+                                [
+                                    Node {
+                                        kind: Token(
+                                            Some(
+                                                Token {
+                                                    kind: Var,
+                                                    start: 34,
+                                                    end: 37,
+                                                    value: None,
+                                                },
+                                            ),
+                                        ),
+                                        children: None,
+                                    },
+                                    Node {
+                                        kind: Syntax(
+                                            VariableNames,
+                                        ),
+                                        children: Some(
+                                            [
+                                                Node {
+                                                    kind: Syntax(
+                                                        VariableName,
+                                                    ),
+                                                    children: Some(
+                                                        [
+                                                            Node {
+                                                                kind: Token(
+                                                                    Some(
+                                                                        Token {
+                                                                            kind: Name,
+                                                                            start: 38,
+                                                                            end: 39,
+                                                                            value: String(
+                                                                                "n",
+                                                                            ),
+                                                                        },
+                                                                    ),
+                                                                ),
+                                                                children: None,
+                                                            },
+                                                        ],
+                                                    ),
+                                                },
+                                            ],
+                                        ),
+                                    },
+                                    Node {
+                                        kind: Token(
+                                            Some(
+                                                Token {
+                                                    kind: Colon,
+                                                    start: 39,
+                                                    end: 40,
+                                                    value: None,
+                                                },
+                                            ),
+                                        ),
+                                        children: None,
+                                    },
+                                    Node {
+                                        kind: Syntax(
+                                            Type,
+                                        ),
+                                        children: Some(
+                                            [
+                                                Node {
+                                                    kind: Syntax(
+                                                        StandardType,
+                                                    ),
+                                                    children: Some(
+                                                        [
+                                                            Node {
+                                                                kind: Token(
+                                                                    Some(
+                                                                        Token {
+                                                                            kind: Integer,
+                                                                            start: 41,
+                                                                            end: 48,
+                                                                            value: None,
+                                                                        },
+                                                                    ),
+                                                                ),
+                                                                children: None,
+                                                            },
+                                                        ],
+                                                    ),
+                                                },
+                                            ],
+                                        ),
+                                    },
+                                    Node {
+                                        kind: Token(
+                                            Some(
+                                                Token {
+                                                    kind: Semicolon,
+                                                    start: 48,
+                                                    end: 49,
+                                                    value: None,
+                                                },
+                                            ),
+                                        ),
+                                        children: None,
+                                    },
+                                ],
+                            ),
+                        },
+                        Node {
+                            kind: Syntax(
+                                CompoundStatement,
+                            ),
+                            children: Some(
+                                [
+                                    Node {
+                                        kind: Token(
+                                            Some(
+                                                Token {
+                                                    kind: Begin,
+                                                    start: 50,
+                                                    end: 55,
+                                                    value: None,
+                                                },
+                                            ),
+                                        ),
+                                        children: None,
+                                    },
+                                    Node {
+                                        kind: Syntax(
+                                            Statement,
+                                        ),
+                                        children: Some(
+                                            [
+                                                Node {
+                                                    kind: Syntax(
+                                                        AssignmentStatement,
+                                                    ),
+                                                    children: Some(
+                                                        [
+                                                            Node {
+                                                                kind: Syntax(
+                                                                    LeftPart,
+                                                                ),
+                                                                children: Some(
+                                                                    [
+                                                                        Node {
+                                                                            kind: Syntax(
+                                                                                Variable,
+                                                                            ),
+                                                                            children: Some(
+                                                                                [
+                                                                                    Node {
+                                                                                        kind: Syntax(
+                                                                                            VariableName,
+                                                                                        ),
+                                                                                        children: Some(
+                                                                                            [
+                                                                                                Node {
+                                                                                                    kind: Token(
+                                                                                                        Some(
+                                                                                                            Token {
+                                                                                                                kind: Name,
+                                                                                                                start: 57,
+                                                                                                                end: 58,
+                                                                                                                value: String(
+                                                                                                                    "n",
+                                                                                                                ),
+                                                                                                            },
+                                                                                                        ),
+                                                                                                    ),
+                                                                                                    children: None,
+                                                                                                },
+                                                                                            ],
+                                                                                        ),
+                                                                                    },
+                                                                                ],
+                                                                            ),
+                                                                        },
+                                                                    ],
+                                                                ),
+                                                            },
+                                                            Node {
+                                                                kind: Token(
+                                                                    Some(
+                                                                        Token {
+                                                                            kind: Assign,
+                                                                            start: 59,
+                                                                            end: 61,
+                                                                            value: None,
+                                                                        },
+                                                                    ),
+                                                                ),
+                                                                children: None,
+                                                            },
+                                                            Node {
+                                                                kind: Syntax(
+                                                                    Expression,
+                                                                ),
+                                                                children: Some(
+                                                                    [
+                                                                        Node {
+                                                                            kind: Syntax(
+                                                                                SimpleExpression,
+                                                                            ),
+                                                                            children: Some(
+                                                                                [
+                                                                                    Node {
+                                                                                        kind: Syntax(
+                                                                                            Term,
+                                                                                        ),
+                                                                                        children: Some(
+                                                                                            [
+                                                                                                Node {
+                                                                                                    kind: Syntax(
+                                                                                                        Factor,
+                                                                                                    ),
+                                                                                                    children: Some(
+                                                                                                        [
+                                                                                                            Node {
+                                                                                                                kind: Syntax(
+                                                                                                                    Constant,
+                                                                                                                ),
+                                                                                                                children: Some(
+                                                                                                                    [
+                                                                                                                        Node {
+                                                                                                                            kind: Token(
+                                                                                                                                Some(
+                                                                                                                                    Token {
+                                                                                                                                        kind: UnsignedInteger,
+                                                                                                                                        start: 62,
+                                                                                                                                        end: 63,
+                                                                                                                                        value: Integer(
+                                                                                                                                            1,
+                                                                                                                                        ),
+                                                                                                                                    },
+                                                                                                                                ),
+                                                                                                                            ),
+                                                                                                                            children: None,
+                                                                                                                        },
+                                                                                                                    ],
+                                                                                                                ),
+                                                                                                            },
+                                                                                                        ],
+                                                                                                    ),
+                                                                                                },
+                                                                                            ],
+                                                                                        ),
+                                                                                    },
+                                                                                ],
+                                                                            ),
+                                                                        },
+                                                                    ],
+                                                                ),
+                                                            },
+                                                        ],
+                                                    ),
+                                                },
+                                            ],
+                                        ),
+                                    },
+                                    Node {
+                                        kind: Token(
+                                            Some(
+                                                Token {
+                                                    kind: End,
+                                                    start: 64,
+                                                    end: 67,
+                                                    value: None,
+                                                },
+                                            ),
+                                        ),
+                                        children: None,
+                                    },
+                                ],
+                            ),
+                        },
+                    ],
+                ),
+            },
+            Node {
+                kind: Token(
+                    Some(
+                        Token {
+                            kind: Dot,
+                            start: 67,
+                            end: 68,
+                            value: None,
+                        },
+                    ),
+                ),
+                children: None,
+            },
+        ],
+    ),
+}

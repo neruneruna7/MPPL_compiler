@@ -1,6 +1,6 @@
 use super::SyntaxKind;
 
-use crate::scan::scan3::Kind;
+use crate::scan::scan3::Token;
 
 #[derive(Debug, Clone)]
 pub struct Node {
@@ -16,6 +16,6 @@ impl Node {
 
 #[derive(Debug, Clone)]
 pub enum NodeKind {
-    Token(Kind),
+    Token(Token),
     Syntax(SyntaxKind),
 }

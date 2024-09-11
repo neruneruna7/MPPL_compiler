@@ -14,7 +14,7 @@ pub struct SyntaxError {
     pub(crate) lexeicalized_source: String,
     pub(crate) expected_token: Vec<scan3::Kind>,
     pub(crate) expected_syntax: Vec<SyntaxKind>,
-    pub(crate) found: Option<Token>,
+    pub(crate) found: Token,
 }
 
 impl SyntaxError {
@@ -23,11 +23,8 @@ impl SyntaxError {
         expected_token: &[scan3::Kind],
         expected_syntax: &[SyntaxKind],
     ) -> Self {
-        let sliced_source = if let Some(ref l) = parser.lookahead {
-            &parser.lexer.source[..l.start]
-        } else {
-            parser.lexer.source
-        };
+        let sliced_source = &parser.lexer.source[..parser.lookahead.start];
+
         let expected_token = expected_token.to_vec();
         let expected_syntax = expected_syntax.to_vec();
         let found = parser.lookahead.clone();
@@ -48,11 +45,7 @@ impl std::fmt::Display for SyntaxError {
             .map(|k| format!("{:?}", k))
             .collect::<Vec<String>>()
             .join(", ");
-        let found = if let Some(ref l) = self.found {
-            format!("{:?}", l)
-        } else {
-            "None".to_string()
-        };
+        let found = format!("{:?}", self.found);
 
         let binding = FIRST_SETS;
         let tokens = binding
