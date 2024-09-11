@@ -1,72 +1,8 @@
-use std::{cell::LazyCell, collections::HashSet};
-
 use crate::scan::scan3::{self, Kind, Lexer, Token};
 
-// 独自のエラー型を定義
-// どんなトークンを期待していたが，実際にはどんなトークンが来たかを表現する
-#[derive(Debug)]
-pub struct SyntaxError {
-    lexeicalized_source: String,
-    expected_token: Vec<scan3::Kind>,
-    expected_syntax: Vec<SyntaxKind>,
-    found: Option<Token>,
-}
-
-impl SyntaxError {
-    pub fn new(
-        parser: &Parser,
-        expected_token: &[scan3::Kind],
-        expected_syntax: &[SyntaxKind],
-    ) -> Self {
-        let sliced_source = if let Some(ref l) = parser.lookahead {
-            &parser.lexer.source[..l.start]
-        } else {
-            parser.lexer.source
-        };
-        let expected_token = expected_token.to_vec();
-        let expected_syntax = expected_syntax.to_vec();
-        let found = parser.lookahead.clone();
-        Self {
-            lexeicalized_source: sliced_source.to_string(),
-            expected_token,
-            expected_syntax,
-            found,
-        }
-    }
-}
-
-impl std::fmt::Display for SyntaxError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let expected_token = self
-            .expected_token
-            .iter()
-            .map(|k| format!("{:?}", k))
-            .collect::<Vec<String>>()
-            .join(", ");
-        let found = if let Some(ref l) = self.found {
-            format!("{:?}", l)
-        } else {
-            "None".to_string()
-        };
-
-        let binding = FIRST_SETS;
-        let tokens = binding
-            .iter()
-            .filter(|x| self.expected_syntax.contains(&x.symbol))
-            .flat_map(|x| x.first_set.iter().collect::<Vec<&Kind>>())
-            .collect::<Vec<&Kind>>();
-
-        write!(
-            f,
-            "source code:\n\n {} \n\n expect token= {:?}, syntax= {:?} token= {:?} but found {:?}",
-            self.lexeicalized_source, expected_token, self.expected_syntax, tokens, found
-        )
-    }
-}
-
-impl std::error::Error for SyntaxError {}
-
-type SyntaxResult = std::result::Result<(), SyntaxError>;
+mod error;
+mod ast;
+mod first_set;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[allow(dead_code)]
@@ -106,273 +42,6 @@ pub enum SyntaxKind {
     OutputFormat,
 }
 
-struct FirstSet {
-    symbol: SyntaxKind,
-    first_set: HashSet<Kind>,
-}
-
-impl FirstSet {
-    fn new(symbol: SyntaxKind, first_set: HashSet<Kind>) -> Self {
-        Self { symbol, first_set }
-    }
-}
-
-const FIRST_SETS: LazyCell<Vec<FirstSet>> = {
-    LazyCell::new(|| {
-        vec![
-            FirstSet::new(
-                SyntaxKind::Program,
-                vec![Kind::Program].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::Block,
-                vec![Kind::Var, Kind::Procedure, Kind::Begin]
-                    .into_iter()
-                    .collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::VariableDeclaration,
-                vec![Kind::Var].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::VariableNames,
-                vec![Kind::Name].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::VariableName,
-                vec![Kind::Name].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::Type,
-                vec![Kind::Integer, Kind::Boolean, Kind::Char, Kind::Array]
-                    .into_iter()
-                    .collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::StandardType,
-                vec![Kind::Integer, Kind::Boolean, Kind::Char]
-                    .into_iter()
-                    .collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::ArrayType,
-                vec![Kind::Array].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::SubprogramDeclaration,
-                vec![Kind::Procedure].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::ProcedureName,
-                vec![Kind::Name].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::FormalParameters,
-                vec![Kind::LParen].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::CompoundStatement,
-                vec![Kind::Begin].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::Statement,
-                vec![
-                    Kind::Name,
-                    Kind::If,
-                    Kind::While,
-                    Kind::Break,
-                    Kind::Call,
-                    Kind::Return,
-                    Kind::Read,
-                    Kind::Readln,
-                    Kind::Write,
-                    Kind::Writeln,
-                    Kind::Begin,
-                    Kind::Semicolon,
-                    Kind::End,
-                    Kind::Else,
-                ]
-                .into_iter()
-                .collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::ConditionStatement,
-                vec![Kind::If].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::IterationStatement,
-                vec![Kind::While].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::ExitStatement,
-                vec![Kind::Break].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::CallStatement,
-                vec![Kind::Call].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::Expressions,
-                vec![
-                    Kind::Name,
-                    Kind::Plus,
-                    Kind::Minus,
-                    Kind::LParen,
-                    Kind::Not,
-                    Kind::Integer,
-                    Kind::True,
-                    Kind::False,
-                    Kind::String,
-                    Kind::Boolean,
-                    Kind::Char,
-                    Kind::UnsignedInteger,
-                ]
-                .into_iter()
-                .collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::ReturnStatement,
-                vec![Kind::Return].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::AssignmentStatement,
-                vec![Kind::Name].into_iter().collect(),
-            ),
-            FirstSet::new(SyntaxKind::LeftPart, vec![Kind::Name].into_iter().collect()),
-            FirstSet::new(SyntaxKind::Variable, vec![Kind::Name].into_iter().collect()),
-            FirstSet::new(
-                SyntaxKind::Expression,
-                vec![
-                    Kind::Name,
-                    Kind::Plus,
-                    Kind::Minus,
-                    Kind::LParen,
-                    Kind::Not,
-                    Kind::Integer,
-                    Kind::True,
-                    Kind::False,
-                    Kind::String,
-                    Kind::Boolean,
-                    Kind::Char,
-                    Kind::UnsignedInteger,
-                ]
-                .into_iter()
-                .collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::SimpleExpression,
-                vec![
-                    Kind::Name,
-                    Kind::Plus,
-                    Kind::Minus,
-                    Kind::LParen,
-                    Kind::Not,
-                    Kind::Integer,
-                    Kind::True,
-                    Kind::False,
-                    Kind::String,
-                    Kind::Boolean,
-                    Kind::Char,
-                    Kind::UnsignedInteger,
-                ]
-                .into_iter()
-                .collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::Term,
-                vec![
-                    Kind::Name,
-                    Kind::Plus,
-                    Kind::Minus,
-                    Kind::LParen,
-                    Kind::Not,
-                    Kind::Integer,
-                    Kind::True,
-                    Kind::False,
-                    Kind::String,
-                    Kind::Boolean,
-                    Kind::Char,
-                    Kind::UnsignedInteger,
-                ]
-                .into_iter()
-                .collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::Factor,
-                vec![
-                    Kind::Name,
-                    Kind::LParen,
-                    Kind::Not,
-                    Kind::Integer,
-                    Kind::True,
-                    Kind::False,
-                    Kind::String,
-                    Kind::Boolean,
-                    Kind::Char,
-                    Kind::UnsignedInteger,
-                ]
-                .into_iter()
-                .collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::Constant,
-                vec![Kind::UnsignedInteger, Kind::True, Kind::False, Kind::String]
-                    .into_iter()
-                    .collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::MultiplicativeOperator,
-                vec![Kind::Star, Kind::Div, Kind::And].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::AdditiveOperator,
-                vec![Kind::Plus, Kind::Minus, Kind::Or]
-                    .into_iter()
-                    .collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::RelationalOperator,
-                vec![
-                    Kind::Equal,
-                    Kind::NotEq,
-                    Kind::Less,
-                    Kind::LessEq,
-                    Kind::Great,
-                    Kind::GreatEq,
-                ]
-                .into_iter()
-                .collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::InputStatement,
-                vec![Kind::Read, Kind::Readln].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::OutputStatement,
-                vec![Kind::Write, Kind::Writeln].into_iter().collect(),
-            ),
-            FirstSet::new(
-                SyntaxKind::OutputFormat,
-                vec![
-                    Kind::True,
-                    Kind::Not,
-                    Kind::Plus,
-                    Kind::Boolean,
-                    Kind::Minus,
-                    Kind::False,
-                    Kind::LParen,
-                    Kind::Char,
-                    Kind::UnsignedInteger,
-                    Kind::String,
-                    Kind::Name,
-                    Kind::Integer,
-                ]
-                .into_iter()
-                .collect(),
-            ),
-        ]
-    })
-};
 
 pub struct Parser<'a> {
     lexer: Lexer<'a>,
@@ -397,7 +66,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn match_consume_token(&mut self, kind: scan3::Kind) -> SyntaxResult {
+    fn match_consume_token(&mut self, kind: scan3::Kind) -> error::SyntaxResult {
         if self.match_token(kind) {
             self.cur_token = kind;
             self.lookahead = Some(self.lexer.read_next_token());
@@ -408,7 +77,7 @@ impl<'a> Parser<'a> {
                 "consume token error: {:?}, lookahead: {:?}",
                 kind, self.lookahead
             );
-            Err(SyntaxError::new(self, &[kind], &[]))
+            Err(error::SyntaxError::new(self, &[kind], &[]))
         }
     }
 
@@ -418,12 +87,12 @@ impl<'a> Parser<'a> {
         } else {
             return false;
         };
-        let binding = FIRST_SETS;
+        let binding = first_set::FIRST_SETS;
         let tokens = binding.iter().find(|x| x.symbol == syntax).unwrap();
         tokens.first_set.contains(&lk)
     }
 
-    fn match_consume_syntax(&mut self, syntax: SyntaxKind) -> SyntaxResult {
+    fn match_consume_syntax(&mut self, syntax: SyntaxKind) -> error::SyntaxResult {
         if self.match_syntax_first_token(syntax) {
             match syntax {
                 SyntaxKind::Program => unreachable!(),
@@ -462,13 +131,13 @@ impl<'a> Parser<'a> {
             }
             Ok(())
         } else {
-            Err(SyntaxError::new(self, &[], &[syntax]))
+            Err(error::SyntaxError::new(self, &[], &[syntax]))
         }
     }
 
     /// パースの開始
     /// "program" "名前" ";" ブロック "."
-    pub fn parse_program(&mut self) -> SyntaxResult {
+    pub fn parse_program(&mut self) -> error::SyntaxResult {
         // マクロ構文のprogramに該当
         self.match_consume_token(Kind::Program)?;
         self.match_consume_token(Kind::Name)?;
@@ -479,7 +148,7 @@ impl<'a> Parser<'a> {
     }
 
     /// { 変数宣言部 | 副プログラム宣言 } 複合文
-    fn block(&mut self) -> SyntaxResult {
+    fn block(&mut self) -> error::SyntaxResult {
         while let Some(ref l) = self.lookahead {
             match l.kind {
                 _ if self.match_syntax_first_token(SyntaxKind::VariableDeclaration) => {
@@ -496,7 +165,7 @@ impl<'a> Parser<'a> {
     }
 
     /// "var" 変数名の並び ":" 型 ";" { 変数名の並び ":" 型 ";" }
-    fn variable_declaration_part(&mut self) -> SyntaxResult {
+    fn variable_declaration_part(&mut self) -> error::SyntaxResult {
         self.match_consume_token(Kind::Var)?;
         self.match_consume_syntax(SyntaxKind::VariableNames)?;
         self.match_consume_token(Kind::Colon)?;
@@ -517,7 +186,7 @@ impl<'a> Parser<'a> {
     }
 
     /// 変数名 { "," 変数名 }
-    fn variable_names(&mut self) -> SyntaxResult {
+    fn variable_names(&mut self) -> error::SyntaxResult {
         self.match_consume_syntax(SyntaxKind::VariableName)?;
 
         while let Some(ref l) = self.lookahead {
@@ -532,15 +201,15 @@ impl<'a> Parser<'a> {
     }
 
     /// "名前"
-    fn valriable_name(&mut self) -> SyntaxResult {
+    fn valriable_name(&mut self) -> error::SyntaxResult {
         self.match_consume_token(Kind::Name)?;
         Ok(())
     }
 
     /// 標準型 | 配列型
     /// 予約語に引っかかるのを防ぐため，アンダーバーをつけている
-    fn type_(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(
+    fn type_(&mut self) -> error::SyntaxResult {
+        let err = error::SyntaxError::new(
             self,
             &[],
             &[SyntaxKind::StandardType, SyntaxKind::ArrayType],
@@ -559,8 +228,8 @@ impl<'a> Parser<'a> {
     }
 
     /// "integer" | "boolean" | "char"
-    fn standard_type(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(self, &[], &[SyntaxKind::StandardType]);
+    fn standard_type(&mut self) -> error::SyntaxResult {
+        let err = error::SyntaxError::new(self, &[], &[SyntaxKind::StandardType]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Integer => self.match_consume_token(Kind::Integer)?,
@@ -574,7 +243,7 @@ impl<'a> Parser<'a> {
     }
 
     /// "array" "[" "符号なし整数" "]" "of" 標準型
-    fn array_type(&mut self) -> SyntaxResult {
+    fn array_type(&mut self) -> error::SyntaxResult {
         self.match_consume_token(Kind::Array)?;
         self.match_consume_token(Kind::LBracket)?;
         self.match_consume_token(Kind::UnsignedInteger)?;
@@ -585,7 +254,7 @@ impl<'a> Parser<'a> {
     }
 
     /// "procedure" 手続き名 [ 仮引数部 ] ";" [ 変数宣言部 ] 複合文 ";"
-    fn subprogram_declaration(&mut self) -> SyntaxResult {
+    fn subprogram_declaration(&mut self) -> error::SyntaxResult {
         self.match_consume_token(Kind::Procedure)?;
         self.match_consume_syntax(SyntaxKind::ProcedureName)?;
         if let Some(ref l) = self.lookahead {
@@ -605,13 +274,13 @@ impl<'a> Parser<'a> {
     }
 
     /// "名前"
-    fn procedure_name(&mut self) -> SyntaxResult {
+    fn procedure_name(&mut self) -> error::SyntaxResult {
         self.match_consume_token(Kind::Name)?;
         Ok(())
     }
 
     /// "(" 変数名の並び ":" 型 { ";" 変数名の並び ":" 型 } ")"
-    fn formal_parameters(&mut self) -> SyntaxResult {
+    fn formal_parameters(&mut self) -> error::SyntaxResult {
         self.match_consume_token(Kind::LParen)?;
         self.match_consume_syntax(SyntaxKind::VariableNames)?;
         self.match_consume_token(Kind::Colon)?;
@@ -631,7 +300,7 @@ impl<'a> Parser<'a> {
     }
 
     /// "begin" 文 { ";" 文 } "end"
-    fn compound_statement(&mut self) -> SyntaxResult {
+    fn compound_statement(&mut self) -> error::SyntaxResult {
         self.match_consume_token(Kind::Begin)?;
         self.match_consume_syntax(SyntaxKind::Statement)?;
         while let Some(ref l) = self.lookahead {
@@ -648,7 +317,7 @@ impl<'a> Parser<'a> {
 
     /// 代入文 | 分岐文 | 繰り返し文 | 脱出文 | 手続き呼び出し文 | 複合文 | 戻り文 | 入力文
     /// | 出力文 | 複合文 | 空文
-    fn statement(&mut self) -> SyntaxResult {
+    fn statement(&mut self) -> error::SyntaxResult {
         if let Some(ref l) = self.lookahead {
             match l.kind {
                 _ if self.match_syntax_first_token(SyntaxKind::AssignmentStatement) => {
@@ -686,7 +355,7 @@ impl<'a> Parser<'a> {
     }
 
     /// "if" 式 "then" 文 [ "else" 文 ]
-    fn condnition_statement(&mut self) -> SyntaxResult {
+    fn condnition_statement(&mut self) -> error::SyntaxResult {
         self.match_consume_token(Kind::If)?;
         self.match_consume_syntax(SyntaxKind::Expression)?;
         self.match_consume_token(Kind::Then)?;
@@ -704,7 +373,7 @@ impl<'a> Parser<'a> {
     }
 
     /// "while" 式 "do" 文
-    fn iteration_statement(&mut self) -> SyntaxResult {
+    fn iteration_statement(&mut self) -> error::SyntaxResult {
         self.match_consume_token(Kind::While)?;
         self.match_consume_syntax(SyntaxKind::Expression)?;
         self.match_consume_token(Kind::DO)?;
@@ -713,13 +382,13 @@ impl<'a> Parser<'a> {
     }
 
     /// "break"
-    fn exit_statement(&mut self) -> SyntaxResult {
+    fn exit_statement(&mut self) -> error::SyntaxResult {
         self.match_consume_token(Kind::Break)?;
         Ok(())
     }
 
     /// "call" 手続き名 [ "(" 式の並び ")" ]
-    fn call_statement(&mut self) -> SyntaxResult {
+    fn call_statement(&mut self) -> error::SyntaxResult {
         self.match_consume_token(Kind::Call)?;
         self.match_consume_syntax(SyntaxKind::ProcedureName)?;
         if let Some(ref l) = self.lookahead {
@@ -733,7 +402,7 @@ impl<'a> Parser<'a> {
     }
 
     /// 式 { "," 式 }
-    fn expressions(&mut self) -> SyntaxResult {
+    fn expressions(&mut self) -> error::SyntaxResult {
         self.match_consume_syntax(SyntaxKind::Expression)?;
         while let Some(ref l) = self.lookahead {
             if l.kind == Kind::Comma {
@@ -747,13 +416,13 @@ impl<'a> Parser<'a> {
     }
 
     /// return
-    fn return_statement(&mut self) -> SyntaxResult {
+    fn return_statement(&mut self) -> error::SyntaxResult {
         self.match_consume_token(Kind::Return)?;
         Ok(())
     }
 
     /// 左辺部 ":=" 式
-    fn assignment_statement(&mut self) -> SyntaxResult {
+    fn assignment_statement(&mut self) -> error::SyntaxResult {
         self.match_consume_syntax(SyntaxKind::LeftPart)?;
         self.match_consume_token(Kind::Assign)?;
         self.match_consume_syntax(SyntaxKind::Expression)?;
@@ -761,13 +430,13 @@ impl<'a> Parser<'a> {
     }
 
     /// 変数
-    fn left_part(&mut self) -> SyntaxResult {
+    fn left_part(&mut self) -> error::SyntaxResult {
         self.match_consume_syntax(SyntaxKind::Variable)?;
         Ok(())
     }
 
     /// 変数名 [ "[" 式 "]" ]
-    fn variable(&mut self) -> SyntaxResult {
+    fn variable(&mut self) -> error::SyntaxResult {
         self.match_consume_syntax(SyntaxKind::VariableName)?;
         if let Some(ref l) = self.lookahead {
             if l.kind == Kind::LBracket {
@@ -780,7 +449,7 @@ impl<'a> Parser<'a> {
     }
 
     /// 単純式 { 関係演算子 単純式 }
-    fn expression(&mut self) -> SyntaxResult {
+    fn expression(&mut self) -> error::SyntaxResult {
         self.match_consume_syntax(SyntaxKind::SimpleExpression)?;
         if let Some(ref l) = self.lookahead {
             if self.match_syntax_first_token(SyntaxKind::RelationalOperator) {
@@ -792,7 +461,7 @@ impl<'a> Parser<'a> {
     }
 
     /// [ "+" | "-" ] 項 { 加法演算子 項 }
-    fn simple_expression(&mut self) -> SyntaxResult {
+    fn simple_expression(&mut self) -> error::SyntaxResult {
         if let Some(ref l) = self.lookahead {
             match l.kind {
                 Kind::Plus => self.match_consume_token(Kind::Plus)?,
@@ -813,7 +482,7 @@ impl<'a> Parser<'a> {
     }
 
     /// 因子 { 乗法演算子 因子 }
-    fn term(&mut self) -> SyntaxResult {
+    fn term(&mut self) -> error::SyntaxResult {
         self.match_consume_syntax(SyntaxKind::Factor)?;
         while let Some(ref l) = self.lookahead {
             if self.match_syntax_first_token(SyntaxKind::MultiplicativeOperator) {
@@ -827,8 +496,8 @@ impl<'a> Parser<'a> {
     }
 
     /// 変数 | 定数 | "(" 式 ")" | "not" 因子 | 標準型 "(" 式 ")"
-    fn factor(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(
+    fn factor(&mut self) -> error::SyntaxResult {
+        let err = error::SyntaxError::new(
             self,
             &[Kind::LParen, Kind::Not],
             &[
@@ -869,8 +538,8 @@ impl<'a> Parser<'a> {
     }
 
     /// "符号なし整数" | "true" | "false" | "文字列"
-    fn constant(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(
+    fn constant(&mut self) -> error::SyntaxResult {
+        let err = error::SyntaxError::new(
             self,
             &[Kind::UnsignedInteger, Kind::True, Kind::False, Kind::String],
             &[],
@@ -889,8 +558,8 @@ impl<'a> Parser<'a> {
     }
 
     /// "*" | "div" | "and"
-    fn multiplicative_operator(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(self, &[Kind::Star, Kind::Div, Kind::And], &[]);
+    fn multiplicative_operator(&mut self) -> error::SyntaxResult {
+        let err = error::SyntaxError::new(self, &[Kind::Star, Kind::Div, Kind::And], &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Star => self.match_consume_token(Kind::Star)?,
@@ -904,8 +573,8 @@ impl<'a> Parser<'a> {
     }
 
     /// "+" | "-" | "or"
-    fn additive_operator(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(self, &[Kind::Plus, Kind::Minus, Kind::Or], &[]);
+    fn additive_operator(&mut self) -> error::SyntaxResult {
+        let err = error::SyntaxError::new(self, &[Kind::Plus, Kind::Minus, Kind::Or], &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Plus => self.match_consume_token(Kind::Plus)?,
@@ -919,8 +588,8 @@ impl<'a> Parser<'a> {
     }
 
     /// "=" | "<>" | "<" | "<=" | ">" | ">="
-    fn relational_operator(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(
+    fn relational_operator(&mut self) -> error::SyntaxResult {
+        let err = error::SyntaxError::new(
             self,
             &[
                 Kind::Equal,
@@ -948,8 +617,8 @@ impl<'a> Parser<'a> {
     }
 
     /// ( "read" | "readln" ) [ "(" 変数 { "," 変数 } ")" ]
-    fn input_statement(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(self, &[Kind::Read, Kind::Readln], &[]);
+    fn input_statement(&mut self) -> error::SyntaxResult {
+        let err = error::SyntaxError::new(self, &[Kind::Read, Kind::Readln], &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Read => self.match_consume_token(Kind::Read)?,
@@ -978,8 +647,8 @@ impl<'a> Parser<'a> {
     }
 
     /// ( "write" | "writeln" ) [ "(" 出力指定 { "," 出力指定 } ")" ]
-    fn output_statement(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(self, &[Kind::Write, Kind::Writeln], &[]);
+    fn output_statement(&mut self) -> error::SyntaxResult {
+        let err = error::SyntaxError::new(self, &[Kind::Write, Kind::Writeln], &[]);
         match self.lookahead {
             Some(ref l) => match l.kind {
                 Kind::Write => self.match_consume_token(Kind::Write)?,
@@ -1008,8 +677,8 @@ impl<'a> Parser<'a> {
     }
 
     /// 式 [ ":" "符号なし整数" ] | "文字列"
-    fn output_format(&mut self) -> SyntaxResult {
-        let err = SyntaxError::new(self, &[Kind::String], &[SyntaxKind::Expression]);
+    fn output_format(&mut self) -> error::SyntaxResult {
+        let err = error::SyntaxError::new(self, &[Kind::String], &[SyntaxKind::Expression]);
 
         match self.lookahead {
             Some(ref l) => match l.kind {
