@@ -1,9 +1,9 @@
-use ast::{Node, NodeKind};
+use st::{Node, NodeKind};
 use error::SyntaxError;
 
 use crate::scan::scan3::{self, Kind, Lexer, Token};
 
-mod ast;
+mod st;
 mod error;
 mod first_set;
 
